@@ -1,0 +1,104 @@
+import os
+import sys
+import subprocess
+
+def check():
+    with open("C:\\Users\\Clement\\Desktop\\temp delete\\Forensics Question 1.txt", "r+") as f:
+        full = f.read().split("ANSWER: ")
+        #answer = f.read().split("ANSWER: ")[1]
+        print(full)
+        #print("answer: " + answer)
+        #if (answer == "yes"):
+        #    print("cool!")
+
+def check2():
+    with open("C:\\Users\\Clement\\Desktop\\temp delete\\Forensics Question 1.txt", "r+") as f:
+        content = f.readlines()
+        content = [x.strip() for x in content]
+        count = 0
+        while count < 3:
+            for l in content:
+                if "ANSWER: " in l:
+                    answer = l
+                    count += 1
+        answer = answer.split("ANSWER: ")[1]
+        print(answer)
+        #print("answer: " + answer)
+        #if (answer == "yes"):
+        #    print("cool!")
+
+def feat():
+        name = "TelnetClient"
+        authorized = False
+        points = 4
+        comment = "Telnet Client has been disabled"
+        if not authorized == None:
+            #try:
+                print("passed")
+                result = subprocess.check_output("dism /online /Get-Features", shell=True, startupinfo=None).decode('utf-8')
+                print("help")
+                print(result)
+                features = result.replace("\r", "").split("\n")
+                print(features)
+                for i, x in enumerate(features):
+                    if (name in x):  # if found in features
+                        state = features[i + 1].split()[2]  # get state
+                        # ("Enabled" == "Disabled") != true
+                        # ("Disabled" == "Disabled") != false
+                        if (state == "Disabled") != authorized:  # if state enabled and authorized, or state disabled and unauthorized
+                            print("yay")
+                        print("nay")
+                return print("oof1")  # invalid feature name
+            #except:
+                return print("oof2")
+        else:
+            return print("oof3")
+
+    
+
+def checkz():
+
+    policy = "AuditAccountManage"
+    mVal = 3
+    scoreOn = "="
+    points = 4
+    comment = "cool"
+    penalty = "bad"
+
+    subprocess.check_output("SecEdit.exe /export /cfg \"C:\Scoring Engine\securityExport.inf\"")
+        
+    with open("C:/Scoring Engine/securityExport.inf") as secEdit:
+        for line in secEdit.read().replace("\0", "").split("\n"):
+            if (policy in line):
+                value = line.split()[2]
+                if (scoreOn == ">"):
+                    if (int(value) > mVal):
+                        return "yay"
+                    return "no"
+                elif (scoreOn == "<"):
+                    if (int(value) < mVal):
+                         return "yay"
+                    return "no"
+                elif (scoreOn == ">="):
+                    if (int(value) >= mVal):
+                        return "yay"
+                    return "no"
+                elif (scoreOn == "<="):
+                    if (int(value) <= mVal):
+                        return "yay"
+                    return "no"
+                elif (scoreOn == "="):
+                    if (int(value) == mVal):
+                        return "yay"
+                    return "no"
+                elif (scoreOn == "!="):
+                    if (int(value) != mVal):
+                        return "yay"
+                    return "no"
+                else:
+                    return "oof"  # invalid scoreOn
+        return "oof"  # invalid policy
+    return "oof"
+
+#print(checkz())
+feat()
