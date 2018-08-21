@@ -7,10 +7,9 @@ What was the name of the Lone Ranger's horse?
 ANSWER: Silver
 
 If the question has more than one answer, place each
-
+answer on a separate line, for example:
 
 What was the name of the Lone Ranger's horse?
-answer on a separate line, for example:
 
 ANSWER: Silver
 ANSWER: Dusty
