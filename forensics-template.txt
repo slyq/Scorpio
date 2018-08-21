@@ -1,16 +1,24 @@
-To answer a forensics question, enter your answer after the phrase "ANSWER:"
+To answer a forensics question, enter your answer
+on the line after the phrase "ANSWER:". A forensics
+question would look like this:
 
-Example: What horse(s) did the Lone Ranger ride on?
+What was the name of the Lone Ranger's horse?
 
 ANSWER: Silver
 
-If there are multiple answers, separate them by commas.
+If the question has more than one answer, place each
 
-Example: What horse(s) did the Lone Ranger ride on?
 
-ANSWER: Silver, Dusty
+What was the name of the Lone Ranger's horse?
+answer on a separate line, for example:
 
-============================================================================
+ANSWER: Silver
+ANSWER: Dusty
+
+Remember to save the file after typing the answer.
+The scored question appears below.
+
+===========================================================
 
 <<QUESTION>>? 
 
