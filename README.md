@@ -4,7 +4,7 @@ The Windows Scoring Engine is a python program designed to aid in the scoring of
 
 ## Getting Started
 
-Before zipping the folder off, make a copy of the python scoring engine file and change the top, global variables to fit what you desire. Then, download the Scoring Engine folder to a virtual image.
+Download the Scoring Engine folder to a virtual image.
 
 ### Prerequisites
 
