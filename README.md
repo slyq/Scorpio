@@ -8,33 +8,26 @@ Download the Scoring Engine folder to a virtual image.
 
 ### Prerequisites
 
-You will need a Windows system. Currently, the program has been tested to work on:
+You will need to use 64-bit Python 3.6. You also need to use a Windows system. Currently, the program has been tested to work on:
 
 ```
 Windows 10
 ```
 
-### "Installing"
+You will also need pywin32 and pyinstaller to modify/test and export the scoring engine as a standalone.
 
-If you are using the executable version, use Task Scheduler to schedule the exe to run on startup as Administrator.
-
-Further instructions are below
+To install the needed modules simply run:
 
 ```
-foobar example
+pip install pywin32
+pip install pyinstaller
 ```
-
-And repeat
-
-```
-until finished with example
-```
-
-Test the engine to see if it runs without errors.
 
 ## Modifying the Engine to Your Purposes
 
-THE BIG SECTION
+See the wiki.
+
+Don't forget to test the engine (run as admin) to see if it runs without errors.
 
 ## Running the tests
 
@@ -51,7 +44,7 @@ Use a pre-built image to test the vulnerabilities to ensure that the scoring eng
 
 ## License
 
-This project is licensed under the Copyright License. If you are not the author you shouldn't have access to this unless permitted for special reasons.
+This project is not licensed under anything, but is under a private repos. If you are not one of the authors you shouldn't have access to this unless permitted for special reasons.
 
 ## Acknowledgments
 
