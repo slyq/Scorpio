@@ -34,7 +34,7 @@ Test the engine to see if it runs without errors.
 
 ## Modifying the Engine to Your Purposes
 
-THE BIG SECTION oooooOOOOOoOOOOOooooooo
+THE BIG SECTION
 
 ## Running the tests
 
@@ -46,12 +46,12 @@ Use a pre-built image to test the vulnerabilities to ensure that the scoring eng
 
 ## Authors
 
-* **Jimmy Li** - *Initial work* - [jimmyl02](https://github.com/jimmyl02)
+* **Jimmy Li** - [jimmyl02](https://github.com/jimmyl02)
 * **Clement Chan** - [compileSuccess](https://github.com/compileSuccess)
 
 ## License
 
-This project is licensed under the Copyright License
+This project is licensed under the Copyright License. If you are not the author you shouldn't have access to this unless permitted for special reasons.
 
 ## Acknowledgments
 
