@@ -10,17 +10,14 @@ Download the Scoring Engine folder to a virtual image.
 
 You will need to use 64-bit Python 3.6. You also need to use a Windows system. Currently, the program has been tested to work on:
 
-```
-Windows 10
-```
+* Windows 10
 
 You will also need pywin32 and pyinstaller to modify/test and export the scoring engine as a standalone.
-
 To install the needed modules simply run:
 
 ```
-pip install pywin32
-pip install pyinstaller
+> pip install pywin32
+> pip install pyinstaller
 ```
 
 ## Modifying the Engine to Your Purposes
