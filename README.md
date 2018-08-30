@@ -1,6 +1,6 @@
-# Windows Scoring Engine
+# Scorpio
 
-The Windows Scoring Engine is a python program designed to aid in the scoring of Windows virtual images. It has a clean detection and output of vulnerabilities that are manually checked.
+Scorpio is a Windows scoring engine tool designed to aid in the scoring of Windows virtual images. The primary purpose of the framework has been to make scoring security competitions as simple as possible, so that more time and energy may be spent setting up the competition environment itself. It has a clean detection and output of summary for vulnerabilities that are manually checked.
 
 ## Getting Started
 
