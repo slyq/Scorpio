@@ -1,3 +1,5 @@
+![Scorpio logo with a scorpion's tail](https://raw.githubusercontent.com/compileSuccess/Scorpio/master/scorpio.png?token=AfdmIr9eAiQF68iiEPRZChPt-YQnrcKrks5bkhlvwA%3D%3D)
+
 # Scorpio
 
 Scorpio is a Windows scoring engine tool designed to aid in the scoring of Windows virtual images. The primary purpose of the framework has been to make scoring security competitions as simple as possible, so that more time and energy may be spent setting up the competition environment itself. It has a clean detection and output of summary for vulnerabilities that are manually checked.
