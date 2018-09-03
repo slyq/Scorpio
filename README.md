@@ -18,8 +18,8 @@ You will also need pywin32 and pyinstaller to modify/test and export the scoring
 To install the needed modules simply run:
 
 ```
-> pip install pywin32
-> pip install pyinstaller
+$ pip install pywin32
+$ pip install pyinstaller
 ```
 
 ## Modifying the Engine to Your Purposes
