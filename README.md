@@ -32,6 +32,10 @@ Don't forget to test the engine (run as admin) to see if it runs without errors.
 
 Use a pre-built image to test the vulnerabilities to ensure that the scoring engine is scoring correctly.
 
+## Known bugs that are features
+
+* Disabling a user will prevent the password changed check for that user
+
 ## Built With
 
 * [Python](https://www.python.org/) - The coding language used
