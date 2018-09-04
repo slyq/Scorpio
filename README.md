@@ -32,6 +32,16 @@ Don't forget to test the engine (run as admin) to see if it runs without errors.
 
 Use a pre-built image to test the vulnerabilities to ensure that the scoring engine is scoring correctly.
 
+## Putting the stuff on your image
+
+* Store the exe and ico inside the Windows folder or any folder where clients won't look at normally
+* Create a shortcut for the exe and put it on the desktop
+* Change the shortcut icon to the ico file
+* Implement your own readme, and make sure to mention NOT TO DELETE SCORPIO
+* Implement the forensics questions
+* Create a scheduled task to run as admin on log in
+* Run it once? to test
+
 ## Known bugs that are features
 
 * Disabling a user will prevent the password changed check for that user
