@@ -6,7 +6,7 @@ Scorpio is a Windows scoring engine tool designed to aid in the scoring of Windo
 
 ## Getting Started
 
-Download the Scoring Engine folder to a virtual image.
+Download the Scorpio-master.zip to a virtual image. See the [getting started](https://github.com/compileSuccess/Scorpio/wiki/Getting-Started) page for more details.
 
 ### Prerequisites
 
@@ -30,17 +30,19 @@ Don't forget to test the engine (run as admin) to see if it runs without errors.
 
 ## Running the tests
 
-Use a pre-built image to test the vulnerabilities to ensure that the scoring engine is scoring correctly.
+Use a pre-built image or build a new one to test the vulnerabilities to ensure that the scoring engine is scoring correctly. Pretend that you are the client/user for better results (they may think one thing whereas you think another). Ensure that clients/users cannot accidentally mess up the engine.
 
 ## Putting the stuff on your image
 
-* Store the exe and ico inside the Windows folder or any folder where clients won't look at normally
+* Store the wav (and jpg - optional) files in a new folder wherever you desire. Make sure you specify the path in your scoring engine
+* Store the exe and ico inside the Windows folder or any folder where clients won't look at normally, and possibly add hide attributes
 * Create a shortcut for the exe and put it on the desktop
 * Change the shortcut icon to the ico file
 * Implement your own readme, and make sure to mention NOT TO DELETE SCORPIO
 * Implement the forensics questions
 * Create a scheduled task to run as admin on log in
-* Run it once? to test
+* Run it several times to test it out
+* Delete the Scorpio-master.zip and its extraction folder. LEAVE NO TRACE TO THE SOURCE CODE!
 
 ## Known bugs that are features
 
@@ -52,13 +54,14 @@ Use a pre-built image to test the vulnerabilities to ensure that the scoring eng
 
 ## Authors
 
-* **Jimmy Li** - [jimmyl02](https://github.com/jimmyl02)
 * **Clement Chan** - [compileSuccess](https://github.com/compileSuccess)
+* **Jimmy Li** - [jimmyl02](https://github.com/jimmyl02)
 
 ## License
 
-This project is not licensed under anything, but is under a private repos. If you are not one of the authors you shouldn't have access to this unless permitted for special reasons.
+This project is not licensed under anything, but it is a private repos. If you are not one of the authors you shouldn't have access to this unless permitted for special reasons.
 
 ## Acknowledgments
 
-* Thanks to Jared Flores for inspiration
+* Thanks to Jared Flores and Allen Stubblefield for inspiration
+* Thanks to Jino Sirivatanarat for test image supplementations
