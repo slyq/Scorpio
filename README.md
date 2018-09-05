@@ -50,7 +50,7 @@ Use a pre-built image or build a new one to test the vulnerabilities to ensure t
 
 ## Built With
 
-* [Python](https://www.python.org/) - The coding language used
+* [Python 3.6.6](https://www.python.org/) - The coding language used
 
 ## Authors
 
