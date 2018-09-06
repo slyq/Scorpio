@@ -28,6 +28,12 @@ See the wiki.
 
 Don't forget to test the engine (run as admin) to see if it runs without errors.
 
+Once you are done, use pyinstaller to build an executable and add an icon and obfuscation through [Cython](http://cython.org/) if you desire.
+
+```
+$ pyinstaller --onefile --icon:scorpio.ico scorpio.py
+```
+
 ## Running the tests
 
 Use a pre-built image or build a new one to test the vulnerabilities to ensure that the scoring engine is scoring correctly. Pretend that you are the client/user for better results (they may think one thing whereas you think another). Ensure that clients/users cannot accidentally mess up the engine.
