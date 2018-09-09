@@ -55,6 +55,11 @@ Use a pre-built image or build a new one to test the vulnerabilities to ensure t
 * Disabling a user will prevent the password changed check for that user
 * Sometimes you may have to manually open the features box so that `dism` gets the list
 
+## Fun Stats/Facts
+
+A FeatureObject takes the longest time to check, and the time it takes is inconsistent.
+The time for a run through vuln.check for all vulns can vary from ~0.04-0.20s from one FeatureObject.
+
 ## Built With
 
 * [Python 3.6.6](https://www.python.org/) - The coding language used
