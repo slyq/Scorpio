@@ -31,7 +31,7 @@ Don't forget to test the engine (run as admin) to see if it runs without errors.
 Once you are done, use pyinstaller to build an executable and add an icon and obfuscation through [Cython](http://cython.org/) if you desire.
 
 ```
-$ pyinstaller --onefile --icon:scorpio.ico scorpio.py
+$ pyinstaller --onefile -i scorpio.ico scorpio.py
 ```
 
 ## Running the tests
