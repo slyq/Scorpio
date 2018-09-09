@@ -6,7 +6,7 @@ Scorpio is a Windows scoring engine tool designed to aid in the scoring of Windo
 
 ## Getting Started
 
-Download the Scorpio-master.zip to a virtual image. See the [getting started](https://github.com/compileSuccess/Scorpio/wiki/Getting-Started) page for more details.
+Modify the .gitattributes to fit what you want to export. Then, download the Scorpio-master.zip to a virtual image. See the [getting started](https://github.com/compileSuccess/Scorpio/wiki/Getting-Started) page for more details.
 
 ### Prerequisites
 
