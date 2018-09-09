@@ -50,9 +50,10 @@ Use a pre-built image or build a new one to test the vulnerabilities to ensure t
 * Run it several times to test it out
 * Delete the Scorpio-master.zip and its extraction folder. LEAVE NO TRACE TO THE SOURCE CODE!
 
-## Known bugs that are features
+## Known bugs that are dismissed
 
 * Disabling a user will prevent the password changed check for that user
+* Sometimes you may have to manually open the features box so that `dism` gets the list
 
 ## Built With
 
