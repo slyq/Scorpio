@@ -1,4 +1,4 @@
-![Scorpio logo with a scorpion's tail](https://raw.githubusercontent.com/compileSuccess/Scorpio/master/scorpio.png?token=AfdmIgYxbtoSnwhCoIkF9IV97ycBXdfrks5bm-QOwA%3D%3D)
+![Scorpio logo with a scorpion's tail](https://github.com/compileSuccess/Scorpio/blob/master/scorpio.png)
 
 # Scorpio
 
