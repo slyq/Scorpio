@@ -66,8 +66,9 @@ The time for a run through vuln.check for all vulns can vary from ~0.04-0.20s fr
 
 ## Authors
 
-* **Clement Chan** - [compileSuccess](https://github.com/compileSuccess)
-* **Jimmy Li** - [jimmyl02](https://github.com/jimmyl02)
+* Web Developer, Program Developer, Graphical Artist **Clement Chan** - [compileSuccess](https://github.com/compileSuccess)
+* Program Developer**Jimmy Li** - [jimmyl02](https://github.com/jimmyl02)
+* Program Developer **Christos Bakis** - [CB1442](https://github.com/CB1442)
 
 ## License
 
