@@ -2,7 +2,7 @@
 "/Scoring Engine" export-ignore
 
 /examples/exe export-ignore
-/examples/py export-ignore
+# /examples/py export-ignore
 
 .gitattributes export-ignore
 README.md export-ignore
