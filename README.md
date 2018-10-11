@@ -34,6 +34,8 @@ Once you are done, use pyinstaller to build an executable and add an icon and ob
 $ pyinstaller --onefile -windowed -i scorpio.ico scorpio.py
 ```
 
+Note that `--onefile` may cause some issues with your program, depending on your vulnerabilities.
+
 ## Running the tests
 
 Use a pre-built image or build a new one to test the vulnerabilities to ensure that the scoring engine is scoring correctly. Pretend that you are the client/user for better results (they may think one thing whereas you think another). Ensure that clients/users cannot accidentally mess up the engine.
