@@ -34,7 +34,7 @@ Once you are done, use pyinstaller to build an executable and add an icon and ob
 $ pyinstaller --onefile -windowed -i scorpio.ico scorpio.py
 ```
 
-Note that `--onefile` may cause some issues with your program, depending on your vulnerabilities.
+Note that `-windowed` may cause some issues with your program, depending on your vulnerabilities.
 
 ## Running the tests
 
