@@ -1,0 +1,13 @@
+Copyright Notice
+
+This scoring engine and its associated content are copyright of Clement Chan and
+Jimmy Li.
+
+Any redistribution or reproduction of part or all the contents in any form is
+prhibited.
+
+You may not, except with our express written permission, distribute or commercially
+exploit the content. Nor may you transmit it or store it in any other image or
+other form of electronic retrieval system.
+
+(Copyright 2018) Clement Chan and Jimmy Li
