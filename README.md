@@ -66,10 +66,11 @@ The time for a run through vuln.check for all vulns can vary from ~0.04-0.20s fr
 
 * [Python 3.6.6](https://www.python.org/) - The coding language used
 
-## Authors
+## The Scorpio Team
 
-* **Clement Chan** - [compileSuccess](https://github.com/compileSuccess)
-* **Jimmy Li** - [jimmyl02](https://github.com/jimmyl02)
+* **Clement Chan** Director, Lead Developer, Web Developer - [compileSuccess](https://github.com/compileSuccess)
+* **Jimmy Li** Back-end Developer - [jimmyl02](https://github.com/jimmyl02)
+* **Brandon Liang** Developer and Quality Assurance - [54skyxenon](https://github.com/54skyxenon)
 
 ## License
 
@@ -78,4 +79,4 @@ This project is not licensed under anything, but it is a private repos. If you a
 ## Acknowledgments
 
 * Thanks to Jared Flores and Allen Stubblefield for inspiration
-* Thanks to Jino Sirivatanarat for test image supplementations
+* Thanks to Jino Sirivatanarat for image supplementations
