@@ -2,16 +2,17 @@
 
 # Scorpio
 
-Scorpio is a Windows scoring engine tool designed to aid in the scoring of Windows virtual images. The primary purpose of the framework has been to make scoring security competitions as simple as possible, so that more time and energy may be spent setting up the competition environment itself. It has a clean detection and output of summary for vulnerabilities that are manually checked.
+Scorpio is a Windows scoring engine tool designed to aid in the scoring of Windows virtual images. The primary purpose of the framework has been to make scoring security competitions as simple as possible, so that more time and energy may be spent setting up the competition environment itself. It has a clean detection and output of summary for vulnerabilities that are automatically checked.
 
 ## Getting Started
 
-Modify the .gitattributes to fit what you want to export. Then, download the Scorpio-master.zip to a virtual image. See the [getting started](https://github.com/compileSuccess/Scorpio/wiki/Getting-Started) page for more details.
+(Optional) Modify the .gitattributes to fit what you want to export. Then, download the Scorpio-master.zip to a virtual image. See the [getting started](https://github.com/compileSuccess/Scorpio/wiki/Getting-Started) page for more details.
 
 ### Prerequisites
 
 You will need to use 64-bit Python 3.6. You also need to use a Windows system. Currently, the program has been tested to work on:
 
+* Windows 8.1
 * Windows 10
 
 You will also need pywin32 and pyinstaller to modify/test and export the scoring engine as a standalone.
@@ -48,7 +49,7 @@ Use a pre-built image or build a new one to test the vulnerabilities to ensure t
 * Change the shortcut icon to the ico file
 * Implement your own readme, and make sure to mention NOT TO DELETE SCORPIO
 * Implement the forensics questions
-* Create a scheduled task to run as admin on log in
+* Create a scheduled task to run with highest privileges on log in
 * Run it several times to test it out
 * Delete the Scorpio-master.zip and its extraction folder. LEAVE NO TRACE TO THE SOURCE CODE!
 
@@ -64,7 +65,7 @@ The time for a run through vuln.check for all vulns can vary from ~0.04-0.20s fr
 
 ## Built With
 
-* [Python 3.6.6](https://www.python.org/) - The coding language used
+* [Python 3.6.6](https://www.python.org/downloads/release/python-366/) - The coding language used
 
 ## The Scorpio Team
 
