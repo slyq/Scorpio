@@ -70,8 +70,7 @@ The time for a run through vuln.check for all vulns can vary from ~0.04-0.20s fr
 ## The Scorpio Team
 
 * **Clement Chan** Director, Lead Developer, Web Developer - [compileSuccess](https://github.com/compileSuccess)
-* **Jimmy Li** Back-end Developer - [jimmyl02](https://github.com/jimmyl02)
-* **Brandon Liang** Developer and Quality Assurance - [54skyxenon](https://github.com/54skyxenon)
+* **Jimmy Li** Server Developer and Host - [jimmyl02](https://github.com/jimmyl02)
 
 ## License
 
