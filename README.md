@@ -53,6 +53,10 @@ Use a pre-built image or build a new one to test the vulnerabilities to ensure t
 * Run it several times to test it out
 * Delete the Scorpio-master.zip and its extraction folder. LEAVE NO TRACE TO THE SOURCE CODE!
 
+## Configuration Editor
+
+The configuration tool for Scorpio has been migrated to an electron app. It can be downloaded [here](https://drive.google.com/file/d/1WGncgS5qvgRrWK09IVnO-MkPiYfeC9ao/view?usp=sharing).
+
 ## Known bugs that are dismissed
 
 * Disabling a user will prevent the password changed check for that user
