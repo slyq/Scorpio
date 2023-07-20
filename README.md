@@ -1,41 +1,36 @@
-![Scorpio logo with a scorpion's tail](https://github.com/compileSuccess/Scorpio/blob/master/scorpio.png)
+![Scorpio logo](https://github.com/slyq/Scorpio/blob/main/scorpio.png)
 
 # Scorpio
 
-Scorpio is a Windows scoring engine tool designed to aid in the scoring of Windows virtual images. The primary purpose of the framework has been to make scoring security competitions as simple as possible, so that more time and energy may be spent setting up the competition environment itself. It has a clean detection and output of summary for vulnerabilities that are automatically checked.
+Scorpio is a client-side Windows scoring engine tool designed to score the security of Windows machines given predefined vulnerabilities to check for. It is meant to mock CyberPatriot image scoring, and it provides a clean output of the security issues that are fixed.
 
-## Getting Started
-
-(Optional) Modify the .gitattributes to fit what you want to export. Then, download the Scorpio-master.zip to a virtual image. See the [getting started](https://github.com/compileSuccess/Scorpio/wiki/Getting-Started) page for more details.
+| :warning: DISCLAIMER                                                                                                                                                                  |
+|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Scorpio is designed for educational purposes, not for competitions! Scoring happens offline, but that also means that with enough effort, vulnerabilities can be extracted. Use at your own risk! |
 
 ### Prerequisites
 
-You will need to use 64-bit Python 3.6. You also need to use a Windows system. Currently, the program has been tested to work on:
+Install Python 3.11. You also need to use a Windows system.
 
-* Windows 8.1
-* Windows 10
+Install the required Python modules:
 
-You will also need pywin32 and pyinstaller to modify/test and export the scoring engine as a standalone.
-To install the needed modules simply run:
-
-```
-$ pip install pywin32
-$ pip install pyinstaller
+```sh
+pip install -r requirements.txt
 ```
 
 ## Modifying the Engine to Your Purposes
 
-See the wiki.
-
 Don't forget to test the engine (run as admin) to see if it runs without errors.
 
-Once you are done, use pyinstaller to build an executable and add an icon and obfuscation through [Cython](http://cython.org/) if you desire.
+Once you are done, use pyinstaller to build an executable and add an icon and obfuscation through pyarmor if you desire.
 
-```
-$ pyinstaller --onefile -windowed -i scorpio.ico scorpio.py
+```sh
+pyinstaller --onefile -i scorpio.ico scorpio.py
 ```
 
-Note that `-windowed` may cause some issues with your program, depending on your vulnerabilities.
+## Configuration Editor
+
+The configuration tool for Scorpio has been migrated to an electron app. It can be downloaded [here](https://drive.google.com/file/d/1WGncgS5qvgRrWK09IVnO-MkPiYfeC9ao/view?usp=sharing). Simply paste the encrypted configuration into your `conf.txt` file.
 
 ## Running the tests
 
@@ -43,44 +38,26 @@ Use a pre-built image or build a new one to test the vulnerabilities to ensure t
 
 ## Putting the stuff on your image
 
-* Store the wav (and jpg - optional) files in a new folder wherever you desire. Make sure you specify the path in your scoring engine
-* Store the exe and ico inside the Windows folder or any folder where clients won't look at normally, and possibly add hide attributes
+* Move the "Scoring Engine" folder to "C:\Scoring Engine"
+* Store the compiled exe and ico inside the Windows folder or any folder where clients won't look at normally, and possibly add hide attributes
 * Create a shortcut for the exe and put it on the desktop
 * Change the shortcut icon to the ico file
 * Implement your own readme, and make sure to mention NOT TO DELETE SCORPIO
 * Implement the forensics questions
-* Create a scheduled task to run with highest privileges on log in
+* Create a scheduled task or service to run Scorpio with highest privileges on log in
 * Run it several times to test it out
-* Delete the Scorpio-master.zip and its extraction folder. LEAVE NO TRACE TO THE SOURCE CODE!
+* Delete any remnant files
 
-## Configuration Editor
-
-The configuration tool for Scorpio has been migrated to an electron app. It can be downloaded [here](https://drive.google.com/file/d/1WGncgS5qvgRrWK09IVnO-MkPiYfeC9ao/view?usp=sharing).
-
-## Known bugs that are dismissed
+## Known bugs
 
 * Disabling a user will prevent the password changed check for that user
 * Sometimes you may have to manually open the features box so that `dism` gets the list
 
-## Fun Stats/Facts
-
-A FeatureObject takes the longest time to check, and the time it takes is inconsistent.
-The time for a run through vuln.check for all vulns can vary from ~0.04-0.20s from one FeatureObject.
-
 ## Built With
 
-* [Python 3.6.6](https://www.python.org/downloads/release/python-366/) - The coding language used
+* Python 3.11.4
 
 ## The Scorpio Team
 
-* **Clement Chan** Director, Lead Developer, Web Developer - [compileSuccess](https://github.com/compileSuccess)
-* **Jimmy Li** Server Developer and Host - [jimmyl02](https://github.com/jimmyl02)
-
-## License
-
-This project is not licensed under anything, but it is a private repos. If you are not one of the authors you shouldn't have access to this unless permitted for special reasons.
-
-## Acknowledgments
-
-* Thanks to Jared Flores and Allen Stubblefield for inspiration
-* Thanks to Jino Sirivatanarat for image supplementations
+* **Clement Chan** Scorpio Engine Developer - [slyq](https://github.com/slyq)
+* **Jimmy Li** Scorpio Configuration Editor Developer - [jimmyl02](https://github.com/jimmyl02)
