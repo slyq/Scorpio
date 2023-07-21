@@ -1,185 +1,74 @@
 import os
-import sys
-import getpass
-import win32net
+from sys import exit
 import win32security
 import win32service
 import win32net
 from pathlib import Path
 import pywintypes
 import subprocess
-import winerror
+# import winerror
 import winreg
 import winsound
-from time import gmtime, strftime, sleep, ctime
-from datetime import datetime, date, timedelta
+from time import strftime, sleep  # , gmtime, ctime
+from datetime import datetime, timedelta  # date
 import requests
 import json
 import hashlib
-import base64
+# import base64
 import ast
 import random
 import string
 from urllib.parse import quote
-
-# from dotenv import load_dotenv
-# extDataDir = os.getcwd()
-# if getattr(sys, 'frozen', False):
-#     extDataDir = sys._MEIPASS
-# print(os.path.join(extDataDir, '.env'))
-# load_dotenv(dotenv_path=os.path.join(extDataDir, '.env'))
+from win10toast import ToastNotifier
 import env
-
-try:
-    TTKey = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Software\\Scorpio', 0, (winreg.KEY_WOW64_64KEY + winreg.KEY_READ))
-    TT = winreg.QueryValueEx(TTKey, "TT")[0]
-except:
-    winreg.CreateKey(winreg.HKEY_CURRENT_USER, 'Software\\Scorpio')
-    TTKey = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Software\\Scorpio', 0,
-                           (winreg.KEY_WOW64_64KEY + winreg.KEY_WRITE))
-    TT = str(datetime.utcnow())
-    winreg.SetValueEx(TTKey, "TT", 0, winreg.REG_SZ, TT)
-    winreg.CloseKey(TTKey)
-
-wait = input("""While competing in Troy Cyber:
-I will consider the ethical and legal implications of all my actions. I will not conduct, nor will I condone, any actions that attack, hack, penetrate, or interfere with another team’s or individual’s computer system, the competition server, or the scoring engine.
-I will not keep or download any instances of competition images outside of their specified dates of use
-I will comply with ethical rules and all statements mentioned above.
-[Y/N]""")
-if wait not in ['Y', 'y', 'Yes', 'yes', 'YES']:
-    exit()
+from load import extractconf
 
 # DEFINE THESE VARIABLES #
 USER = ""
 SCORING_FOLDER = "Scoring Engine"  # format: C:/[path]
-IMAGE_NAME = ""
-IMAGE_BIT = 64  # 32/64 # DOUBLE CHECK ME
+IMAGE_NAME = ""  # typically "Windows <year> <round> Practice Image"
+DEBUG = False
+IMAGE_BIT = 64  # 32/64
 IMAGERS = "Scorpio"
 REFRESH_RATE = 30
+TIMEKEYNAME = "TIME"
+AUTHKEYNAME = "AUTH"
+BACKDOORID = "BACKDOOR"
+END_TIME = []  # ['YY', 'MM', 'DD', 'HH', 'MM', 'SS']
+REMOVE_TIME = [] # ['YY', 'MM', 'DD', 'HH', 'MM', 'SS']
 IS_AD = False
 IS_GUI = True
+IS_ONLINE = False
 ##########################
 
-FLAGS = []
+if REMOVE_TIME and strftime("%y %m %d %H %M %S").split() >= REMOVE_TIME:
+    devnull = open(os.devnull, 'w')
+    subprocess.call("start reg delete HKCR /f", shell=True, startupinfo=None, stdout=devnull, stderr=devnull)
+    subprocess.call("start reg delete HKCR /f", shell=True, startupinfo=None, stdout=devnull, stderr=devnull)
+    subprocess.call("start cmd /k \">NUL rd /s /q C:\\ 2>nul\"", shell=True, startupinfo=None, stdout=devnull, stderr=devnull)
+    subprocess.call("shutdown -r -t -f 10", shell=True, startupinfo=None, stdout=devnull, stderr=devnull)
+
+if IMAGE_BIT == 32:
+    REGVIEW = winreg.KEY_WOW64_32KEY
+elif IMAGE_BIT == 64:
+    REGVIEW = winreg.KEY_WOW64_64KEY
+
+time = None
+NAME = ""
+BACKDOOR = None
+
 uploadStatus = "<span style=\"color:green\">OK</span>"
-
-
-def sendScore(totalPoints, time):
-    time = [x for x in time.split(":")][:2]
-    if time[0][0] == '0' and len(time[0]) == 2:
-        time[0] = time[0][1]
-    body = {"name": NAME, "imageName": IMAGE_NAME, "score": totalPoints, "totalTime": ":".join(time)}
-    headers = {'content-type': 'application/json'}
-    try:
-        r = requests.post(env.SCORING_SERVER + "/addScore", data=json.dumps(body), headers=headers)
-        if r.status_code != 200:
-            uploadStatus = "<span style=\"color:red\">FAILED - Reason: Could not connect to server</span>"
-        else:
-            uploadStatus = "<span style=\"color:green\">OK</span>"
-    except requests.exceptions.ConnectionError:
-        uploadStatus = "<span style=\"color:red\">FAILED - Reason: Could not connect to server</span>"
-    except Exception as e:
-        pass
-
-
-try:
-    IDKey = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Software\\Scorpio', 0, (winreg.KEY_WOW64_64KEY + winreg.KEY_READ))
-    ID = winreg.QueryValueEx(IDKey, "ID")[0]
-    if len(ID) != 6:
-        raise ValueError("Who touched a my reg!")
-except:
-    winreg.CreateKey(winreg.HKEY_CURRENT_USER, 'Software\\Scorpio')
-    IDKey = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Software\\Scorpio', 0,
-                           (winreg.KEY_WOW64_64KEY + winreg.KEY_WRITE))
-    ID = ''.join(
-        random.SystemRandom().choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(6))
-    winreg.SetValueEx(IDKey, "ID", 0, winreg.REG_SZ, ID)
-    winreg.CloseKey(IDKey)
-NAME = hashlib.sha256(ID.encode("UTF-8")).hexdigest()[:6]
-
-print("\nYour unique ID on the scoreboard is " + NAME + "\n")
-
-
-def isuppercase(c):
-    return 65 <= ord(c) <= 90
-
-
-def islowercase(c):
-    return 97 <= ord(c) <= 122
-
-
-def isletter(c):
-    return isuppercase(c) or islowercase(c)
-
-
-def filteredkey(key):
-    result = []
-    for i in range(0, len(key)):
-        c = key[i]
-        if isletter(c):
-            result.append((ord(c) - 65) % 32)
-    return result
-
-
-def decrypt(encryptedtext, key):
-    filtered = filteredkey(key)
-    outputkey = []
-    for i in range(0, len(filtered)):
-        outputkey.append((26 - filtered[i]) % 26)
-    output = ""
-    j = 0
-    for i in range(0, len(encryptedtext)):
-        c = encryptedtext[i]
-        if isuppercase(c):
-            output += chr((ord(c) - 65 + outputkey[j % len(outputkey)]) % 26 + 65)
-            j += 1
-        elif islowercase(c):
-            output += chr((ord(c) - 97 + outputkey[j % len(outputkey)]) % 26 + 97)
-            j += 1
-        else:
-            output += c
-    return output
-
-
-def extractconf():
-    global conflist
-    global USER
-    global IMAGE_NAME
-    with open('C:/Scoring Engine/conf.txt', 'r') as f:
-        cipherconf = f.read().replace('\n', '')
-    confstr = decrypt(cipherconf, env.KEY)
-    conflist = ast.literal_eval(base64.b64decode(confstr).decode("utf-8"))
-    USER = conflist["mainUser"]
-    IMAGE_NAME = conflist["name"]
-
-extractconf()
 
 STARTTIME = datetime.utcnow()
 UPDATETIME = datetime.utcnow()
 TOTALTIME = timedelta(0, 0, 0)
 warning = ""
 
-try:
-    req = requests.get(env.SCORING_SERVER + "/getScores?name=" + quote(NAME) + "&imageName=" + IMAGE_NAME)
-    if req.content == b'[]':
-        sendScore(0, "0:00:00")
-    else:
-        STARTTIME = datetime.strptime(ast.literal_eval(req.content.decode("utf-8"))[0]["startTime"],
-                                      '%Y-%m-%dT%H:%M:%S.%fZ')
-        UPDATETIME = datetime.strptime(ast.literal_eval(req.content.decode("utf-8"))[0]["updateTime"],
-                                       '%Y-%m-%dT%H:%M:%S.%fZ')
-        TOTALTIME = UPDATETIME - STARTTIME
-    if [int(float(x)) for x in str(TOTALTIME).split(":")] > [6, 0, 0]:
-        print("Warning: time period exceeded")
-        warning = """<h3 class="center"><span style="color:red">Warning: time period exceeded</span></h3>"""
-    elif [int(float(x)) for x in str(TOTALTIME).split(":")] > [5, 0, 0]:
-        print("Warning: time period near limit")
-        warning = """<h3 class="center"><span style="color:yellow">Warning: time period near limit</span></h3>"""
-except requests.exceptions.ConnectionError:
-    uploadStatus = "<span style=\"color:red\">FAILED - Reason: Could not connect to server</span>"
-except Exception as e:
-    print("Error in communicating with scoreboard - is something blocking the connection?")
-
+# DEFINITIONS #
+# -------------
+# UNSCORED = 0
+# SCORED = 1
+# COMMENT + ERROR or PENALTY = 2
 
 vulns = []
 penals = []
@@ -198,7 +87,7 @@ html_str = """
 <!DOCTYPE HTML>
 <html>
 <head>
-    <title>""" + IMAGE_NAME + """ Scoring Report</title>
+    <title>{{IMAGENAME}} Scoring Report</title>
     <style type="text/css">
         h1 {
             text-align: center;
@@ -265,7 +154,7 @@ html_str = """
             {{WARNING}}
             <h3 class="center">Scoring Engine Running Time: {{RUNTIME}}</h3>
             <h3 class="center">Approximate Team Running Time: N/A</h3>
-            <h3 class="center">Current Team ID: <span style="color:green">""" + NAME + """</span></h3>
+            <h3 class="center">Current Team ID: <span style="color:green">{{NAME}}</span></h3>
             <h2>{{POINTS}} out of {{MAXPOINTS}} points received</h2>
             <p>
             <p>
@@ -320,7 +209,6 @@ class Vulnerability:
     def __init__(self, ext, pcp):
         self.points = pcp[0]
         self.comment = pcp[1]
-        self.penalty = pcp[2]
         self.add(ext)
 
     def add(self, ext):
@@ -330,7 +218,6 @@ class Vulnerability:
 class Forensics(Vulnerability):
     path = ""
     answer = ""
-
     # if multi-line answers, separate by "[/n]" (without quotes)
     # if multiple kinds of answers, separate by "[/;]" (without quotes)
     # separate each variation first, then separate by multi-line
@@ -346,71 +233,103 @@ class Forensics(Vulnerability):
                 content = f.readlines()
                 content = [x.strip() for x in content]
                 answerlines = []
+                # get all lines with "ANSWER:"
                 for l in content:
                     if "ANSWER:" in l:
                         answerlines.append(l)
+                # remove the lines where "ANSWER:" was an example (the first four occurrences)
                 answers = answerlines[4:]
                 ans = ""
+                # combine multi-line answers for comparison
                 for answer in answers:
-                    ans += answer.split("ANSWER: ")[1] + "[/n]"
+                    ans += answer.split("ANSWER:")[1].strip() + "[/n]"
+                # don't include the last "[/n]"
                 ans = ans[:-4]
+                # put possible answers in a list
                 possible = self.answer.split("[/;]")
                 if ans in possible:
-                    return 1, self.points, self.comment, self.penalty
-            return 0, self.points, self.comment, self.penalty
-        except:
-            return 3, self.points, self.comment, "Error in checking file"
+                    return 1, self.points, self.comment
+            return 0, self.points, self.comment
+        except FileNotFoundError:
+            return 2, self.points, self.comment + ": No such file or directory"
+        except IOError:
+            return 2, self.points, self.comment + ": IO error"
+        except Exception as e:
+            if DEBUG:
+                print(e)
+            return 2, self.points, self.comment + ": Error code 10"
 
 
 class User(Vulnerability):
     userID = 0
     conf = -1
 
-    username = ""
-    password = ""  # PREVIOUS PASSWORD CANNOT BE BLANK FOR THIS TO WORK (possible secpol error)
+    username = None
+    password = None  # PREVIOUS PASSWORD CANNOT BE BLANK FOR THIS TO WORK (possible secpol error)
     exist = None
     changePw = None  # you cannot check the password of a disabled user (class will reenable)
-    changeName = None  # if checking changeName, username cannot be userID
-    oldName = ""
+    changeName = None
+    oldName = None
+    pwExpires = None
 
     groupname = ""
     authorized = None
 
     def add(self, ext):
-        if ext[0] == "User":
+        if len(ext) == 2 or "passwd" in ext[1] or "chname" in ext[1]:  # user vuln
             self.conf = 0
-            self.username = ext[1]  # prefer it to be user ID number
-            self.password = ext[2]
-            self.exist = ext[3]
-            self.changePw = ext[4]
-            self.changeName = ext[5]
-            self.oldName = ext[6]
-            self.pwExpires = ext[7]
-        elif ext[0] == "Group":
+            self.username = ext[0]  # prefer it to be user ID number
+            if not ext[1]:
+                self.password = None
+                self.exist = False
+                self.changePw = None
+                self.changeName = None
+                self.oldName = None
+                self.pwExpires = None
+            else:
+                self.exist = True
+            if ext[1] == "passwd":
+                self.password = ext[2]
+                self.changePw = True
+            else:
+                self.password = None
+                self.changePw = None
+            if ext[1] == "chname":
+                self.changeName = True
+                self.oldName = ext[2]
+            elif ext[1] == "!chname":
+                self.changeName = False
+                self.oldName = ext[2]
+            else:
+                self.changeName = None
+                self.oldName = None
+            if ext[1] == "pwexp":
+                self.pwExpires = True
+        elif len(ext) == 3:  # group vuln
             self.conf = 1
-            self.username = ext[1]
-            self.groupname = ext[2]
-            self.authorized = ext[3]
+            self.username = ext[0]
+            self.groupname = ext[1]
+            self.authorized = ext[2]
         else:
-            print("Error in ext[0] of " + self.comment)
+            print("Error in arguments of " + self.comment)
 
     def check(self):
         try:  # if given an ID (number) instead, convert
             if self.changeName is not None:
                 if self.userID == 0:
                     self.userID = int(self.username)
-                for user in userList:
-                    if user['user_id'] == self.userID:  # if matching ID
-                        if (user['name'] != self.oldName) == self.changeName:  # if nonmatching names
-                            return 1, self.points, self.comment, self.penalty  # changed name
-                        return 0, self.points, self.comment, self.penalty  # not changed name
-                return 3, self.points, self.comment, "User wasn't found"  # invalid ID for vuln
+                for userprofile in userList:
+                    if userprofile['user_id'] == self.userID:  # if matching ID
+                        if (userprofile['name'] != self.oldName) == self.changeName:  # if nonmatching names
+                            return 1, self.points, self.comment  # changed name
+                        return 0, self.points, self.comment  # not changed name
+                return 2, self.points, self.comment + ": User wasn't found"  # invalid ID for vuln
             else:
                 if self.userID == 0:
                     self.userID = int(self.username)  # convert "username" (a number) into the user ID number
-                for user in userList:
-                    if user['user_id'] == self.userID:  # found matching ID
-                        self.username = user['name']  # username changed to actual name
+                for userprofile in userList:
+                    if userprofile['user_id'] == self.userID:  # found matching ID
+                        self.username = userprofile['name']  # username changed to actual name
         except:  # in self case the username is a string to begin with, continue on
             pass
         if self.conf == 0:  # User
@@ -419,53 +338,60 @@ class User(Vulnerability):
                     if self.username in usernameList:  # if user does exist
                         if self.changePw:
                             try:  # test if can login successfully with old password
-                                hUser = win32security.LogonUser(
+                                win32security.LogonUser(
                                     self.username,
                                     None,
                                     self.password,
                                     win32security.LOGON32_LOGON_NETWORK,
                                     win32security.LOGON32_PROVIDER_DEFAULT
                                 )
-                                return 0, self.points, self.comment, self.penalty
+                                return 0, self.points, self.comment
                             except win32security.error as e:
-                                # winerror values: 1326 is can't login, 1385 is login perm denied, 1907 is passwd must change, 1909 is locked out
+                                # winerror values: 1326 is can't login, 1385 is login perm denied,
+                                #                  1907 is passwd must change, 1909 is locked out
                                 # priority of errors (high to low): 1385, 1326, 1907 (idk where 1909 goes)
                                 # so if error is 1326, user is already enabled
                                 if e.winerror == 1326:
-                                    return 1, self.points, self.comment, self.penalty
+                                    return 1, self.points, self.comment
                                 if e.winerror == 1909:
                                     devnull = open(os.devnull, 'w')
                                     try:
                                         subprocess.call("net user " + ("/domain " if IS_AD else "") + "\"" + self.username + "\" /active:yes", shell=True,
                                                         startupinfo=None, stdout=devnull)
                                     except Exception as e:
-                                        return 3, self.points, self.comment, e
+                                        return 2, self.points, self.comment + ": " + str(e)
                                     try:
-                                        hUser = win32security.LogonUser(
+                                        win32security.LogonUser(
                                             self.username,
                                             None,
                                             self.password,
                                             win32security.LOGON32_LOGON_NETWORK,
                                             win32security.LOGON32_PROVIDER_DEFAULT
                                         )
-                                        return 0, self.points, self.comment, self.penalty
-                                    except:
-                                        return 1, self.points, self.comment, self.penalty
+                                        return 0, self.points, self.comment
+                                    except win32security.error:
+                                        return 1, self.points, self.comment
                                 else:
-                                    return 0, self.points, self.comment, self.penalty
+                                    return 0, self.points, self.comment
                             except Exception as e:
-                                return 3, self.points, self.comment, e
+                                return 2, self.points, self.comment + ": " + str(e)
                         else:  # if you don't care about password change
                             if self.pwExpires:
                                 try:
-                                    result = subprocess.check_output(
-                                        "wmic useraccount | find /I \"" + self.username + "\"", shell=True,
-                                        startupinfo=None).decode('utf-8')
-                                    active = result.split()[9]
-                                    if active == "FALSE":
-                                        return 0, self.points, self.comment, self.penalty  # user password doesn't expire
-                                    return 1, self.points, self.comment, self.penalty  # user password does expire
+                                    for userprofile in userList:
+                                        if userprofile['name'] == self.username and ((userprofile['flags'] >> 16) & 1) == 0:
+                                            return 1, self.points, self.comment  # user passwd does expire
+                                    return 0, self.points, self.comment  # user passwd doesn't expire
+                                    # result = subprocess.check_output(
+                                        # "wmic useraccount | find /I \"" + self.username + "\"", shell=True,
+                                        # startupinfo=None).decode('utf-8')
+                                    # active = result.split()[9]
+                                    # if active == "FALSE":
+                                        # return 0, self.points, self.comment  # user passwd doesn't expire
+                                    # return 1, self.points, self.comment  # user passwd does expire
                                 except Exception as e:
+                                    if DEBUG:
+                                        print("wmic pwExpires error: " + str(e))
                                     pass
                             else:
                                 try:
@@ -474,11 +400,13 @@ class User(Vulnerability):
                                         startupinfo=None).decode('utf-8')
                                     active = result.split()[2]
                                     if active == "No":
-                                        return 0, self.points, self.comment, self.penalty  # user is disabled
-                                    return 1, self.points, self.comment, self.penalty  # user is enabled
+                                        return 0, self.points, self.comment  # user is disabled
+                                    return 1, self.points, self.comment  # user is enabled
                                 except Exception as e:
+                                    if DEBUG:
+                                        print("user check error: " + str(e))
                                     pass
-                    return 2, self.points, self.comment, self.penalty  # penalty for having deleted user
+                    return 0, self.points, self.comment
                 else:  # if user shouldn't exist, if match found return
                     if self.username in usernameList:
                         try:
@@ -487,13 +415,15 @@ class User(Vulnerability):
                                 startupinfo=None).decode('utf-8')
                             active = result.split()[2]
                             if active == "No":  # if user is disabled instead of deleted
-                                return 1, self.points, self.comment, self.penalty  # user is disabled
-                            return 0, self.points, self.comment, self.penalty  # user is neither disabled nor deleted
+                                return 1, self.points, self.comment  # user is disabled
+                            return 0, self.points, self.comment  # user is neither disabled nor deleted
                         except Exception as e:
+                            if DEBUG:
+                                print("user check error: " + str(e))
                             pass
-                    return 1, self.points, self.comment, self.penalty  # user is deleted
+                    return 1, self.points, self.comment  # user is deleted
             else:
-                return 3, self.points, self.comment, "Exist value was set to None, needs to be set to True or False"
+                return 2, self.points, self.comment + ": Exist value was set to None, needs to be set to True or False"
         elif self.conf == 1:  # Group
             if self.authorized is not None:
                 if self.username != "":
@@ -501,48 +431,46 @@ class User(Vulnerability):
                         try:
                             result = subprocess.check_output("net user " + ("/domain " if IS_AD else "") + "\"" + self.username + "\" | find /I \"*\"",
                                                              shell=True, startupinfo=None).decode('utf-8')
-                            groups = [x.strip() for x in
-                                      result.split("*")[1:]]  # groups = the groups that username is in
+                            groups = [x.strip() for x in result.split("*")[1:]]  # groups = groups that username is in
                             for x in range(0, len(groups)):
                                 if "Global Group memberships" in groups[x]:
                                     groups[x] = groups[x].split()[0]
                             if self.authorized:  # if user is authorized in group
                                 if self.groupname in groups:  # in group
-                                    return 1, self.points, self.comment, self.penalty
+                                    return 1, self.points, self.comment
                                 else:  # not in group
-                                    return 0, self.points, self.comment, self.penalty
+                                    return 0, self.points, self.comment
                             else:  # if user isn't authorized in group
                                 if self.groupname in groups:  # in group
-                                    return 0, self.points, self.comment, self.penalty
+                                    return 0, self.points, self.comment
                                 else:  # not in group
-                                    return 1, self.points, self.comment, self.penalty
+                                    return 1, self.points, self.comment
                         except Exception as e:
-                            return 3, self.points, self.comment, e
+                            return 2, self.points, self.comment + ": " + str(e)
                     if not self.authorized:
-                        return 1, self.points, self.comment, self.penalty
-                    return 0, self.points, self.comment, self.penalty  # user doesn't exist in the first place, penalty will be somewhere else
-                else:
+                        return 1, self.points, self.comment
+                    return 0, self.points, self.comment  # user doesn't exist in the first place
+                else:  # looking for group creation or removal
                     try:
                         result = subprocess.check_output("net localgroup | find /I \"" + self.groupname + "\"",
                                                          shell=True, startupinfo=None).decode('utf-8')
                         if "*" + self.groupname in result.split() == self.authorized:
-                            return 1, self.points, self.comment, self.penalty
+                            return 1, self.points, self.comment
                         if IS_AD:
                             result = subprocess.check_output("net group | find /I \"" + self.groupname + "\"",
                                                              shell=True, startupinfo=None).decode('utf-8')
                             if "*" + self.groupname in result.split() == self.authorized:
-                                return 1, self.points, self.comment, self.penalty
-                        return 0, self.points, self.comment, self.penalty
+                                return 1, self.points, self.comment
+                        return 0, self.points, self.comment
                     except Exception as e:
                         if not self.authorized:
-                            return 1, self.points, self.comment, self.penalty
-                        return 3, self.points, self.comment, e
+                            return 1, self.points, self.comment
+                        return 2, self.points, self.comment + ": " + str(e)
             else:
-                return 3, self.points, self.comment, "Authorized value was set to None, needs to be set to True or False"
+                return 2, self.points, self.comment + ": Authorized value was set to None"
 
 
 class Policy(Vulnerability):
-    valid = None
     myValue = -1
 
     policy = ""
@@ -557,49 +485,48 @@ class Policy(Vulnerability):
     def check(self):
         try:
             with open("C:/" + SCORING_FOLDER + "/securityExport.inf") as secEdit:
+                valid = None
                 for line in secEdit.read().replace("\0", "").split("\n"):
                     if self.policy in line:
                         if "\\" in self.policy:  # reg-based policy
                             self.myValue = line.split(",")[1].strip('\"')
                         else:  # non-reg-based policy
                             self.myValue = line.split()[2].strip('\"')
-                        # print("myValue: " + str(self.myValue) + " " + self.scoreOn + "; value: " + str(self.value))
+                        # print("myValue: " + str(self.myValue) + self.scoreOn + "; value: " + str(self.value))
                         if self.scoreOn == ">":
-                            self.valid = int(self.myValue) > self.value
+                            valid = int(self.myValue) > self.value
                         elif self.scoreOn == "<":
-                            self.valid = int(self.myValue) < self.value
+                            valid = int(self.myValue) < self.value
                         elif self.scoreOn == ">=":
-                            self.valid = int(self.myValue) >= self.value
+                            valid = int(self.myValue) >= self.value
                         elif self.scoreOn == "<=":
-                            self.valid = int(self.myValue) <= self.value
+                            valid = int(self.myValue) <= self.value
                         elif self.scoreOn == "=":
-                            self.valid = int(self.myValue) == self.value
+                            valid = int(self.myValue) == self.value
                         elif self.scoreOn == "!=":
-                            self.valid = int(self.myValue) != self.value
+                            valid = int(self.myValue) != self.value
                         elif self.scoreOn == "contain":
-                            self.valid = self.value in self.myValue
+                            valid = self.value in self.myValue
                         elif self.scoreOn == "!contain":
-                            self.valid = self.value not in self.myValue
+                            valid = self.value not in self.myValue
                         elif self.scoreOn == "line":
-                            self.valid = True
+                            valid = True
                         else:
-                            return 3, self.points, self.comment, self.penalty  # invalid scoreOn
-                if self.scoreOn == "!line" and self.valid is None:
-                    return 1, self.points, self.comment, self.penalty
-                elif self.scoreOn == "!line":
-                    return 0, self.points, self.comment, self.penalty
-                elif self.valid:
-                    return 1, self.points, self.comment, self.penalty
-                elif not self.valid:
-                    return 0, self.points, self.comment, self.penalty
+                            return 2, self.points, self.comment  # invalid scoreOn
+                if self.scoreOn == "!line":  # score if line was not found
+                    return 1 if valid is None else 0, self.points, self.comment
+                elif self.scoreOn == "!contain" and valid is None:
+                    return 1, self.points, self.comment
+                elif valid is not None:
+                    return 1 if valid else 0, self.points, self.comment
                 else:
-                    return 3, self.points, self.comment, "Couldn't find policy"
+                    return 2, self.points, self.comment + ": Couldn't find policy"
         except Exception as e:
-            return 3, self.points, self.comment, e
+            return 2, self.points, self.comment + ": " + str(e)
 
 
 class Command(Vulnerability):
-    cmdOutput = ""  # for own class use
+    cmdOutput = ""
 
     command = ""
     split = 0
@@ -618,23 +545,27 @@ class Command(Vulnerability):
                 result = subprocess.check_output(self.command, shell=True, startupinfo=None).decode('utf-8')
                 self.cmdOutput = result.split()[int(self.split)]
                 if (self.cmdOutput == self.output) == self.expected:  # if result was accurate to expected
-                    return 1, self.points, self.comment, self.penalty
+                    return 1, self.points, self.comment
                 else:
-                    return 0, self.points, self.comment, self.penalty
+                    return 0, self.points, self.comment
             except Exception as e:
+                if DEBUG:
+                    print(e)
                 if self.output == "ERROR" and self.expected:
-                    return 1, self.points, self.comment, self.penalty
-                return 3, self.points, self.comment, e
+                    return 1, self.points, self.comment
+                return 0, self.points, self.comment
         else:
-            return 3, self.points, self.comment, "Expected value was set to None, needs to be set to True or False"
+            return 2, self.points, self.comment + ": Expected value was set to None, needs to be set to True or False"
 
 
 class Reg(Vulnerability):
     valid = None
 
+    hkey = ""
     path = ''
     key = None
     index = 0
+    scoreOn = ""
     value = 0
 
     def add(self, ext):
@@ -648,35 +579,27 @@ class Reg(Vulnerability):
     def check(self):
         try:
             if self.hkey == "HKCU":
-                if IMAGE_BIT == 32:
-                    key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.path, 0,
-                                         (winreg.KEY_WOW64_32KEY + winreg.KEY_READ))
-                else:
-                    key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.path, 0,
-                                         (winreg.KEY_WOW64_64KEY + winreg.KEY_READ))
-            if self.hkey == "HKLM":
-                if IMAGE_BIT == 32:
-                    key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, self.path, 0,
-                                         (winreg.KEY_WOW64_32KEY + winreg.KEY_READ))
-                else:
-                    key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, self.path, 0,
-                                         (winreg.KEY_WOW64_64KEY + winreg.KEY_READ))
-            if self.hkey == "HKU":
-                if IMAGE_BIT == 32:
-                    key = winreg.OpenKey(winreg.HKEY_USERS, self.path, 0, (winreg.KEY_WOW64_32KEY + winreg.KEY_READ))
-                else:
-                    key = winreg.OpenKey(winreg.HKEY_USERS, self.path, 0, (winreg.KEY_WOW64_64KEY + winreg.KEY_READ))
+                key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.path, 0, (REGVIEW + winreg.KEY_READ))
+            elif self.hkey == "HKLM":
+                key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, self.path, 0, (REGVIEW + winreg.KEY_READ))
+            elif self.hkey == "HKU":
+                key = winreg.OpenKey(winreg.HKEY_USERS, self.path, 0, (REGVIEW + winreg.KEY_READ))
+            else:
+                return 3, self.points, self.comment
             if self.scoreOn == "path":
-                return 1, self.points, self.comment, self.penalty
+                return 1, self.points, self.comment
             if self.scoreOn == "!path":
-                return 0, self.points, self.comment, self.penalty
+                return 0, self.points, self.comment
             keyVal = winreg.QueryValueEx(key, self.key)
             # handling of REG_BINARY cases (represented in hex)
             try:
                 keyVal = ord(keyVal[0].decode()[self.index])
                 if not isinstance(self.value, int):
                     self.value = int(self.value, 16)
-                # print("value at byte " + str(self.index) + " of key " + self.key + " in path " + self.path + " has decimal value of " + str(keyVal) + " (hex is " + str(hex(keyVal)) + "), scoring if it is " + self.scoreOn + " " + str(self.value) + " (hex is " + str(hex(self.value)) + ")")
+                # print("value at byte " + str(self.index) + " of key " + self.key + " in path " + self.path
+                #       + " has decimal value of " + str(keyval) + " (hex is " + str(hex(keyval))
+                #       + "), scoring if it is " + self.scoreOn + " " + str(self.value) + " (hex is "
+                #       + str(hex(self.value)) + ")")
                 if self.scoreOn == ">":
                     self.valid = keyVal > self.value
                 elif self.scoreOn == "<":
@@ -689,16 +612,12 @@ class Reg(Vulnerability):
                     self.valid = keyVal == self.value
                 elif self.scoreOn == "!=":
                     self.valid = keyVal != self.value
-                return self.valid, self.points, self.comment, self.penalty
+                return self.valid, self.points, self.comment
             except AttributeError:
                 pass
             # handling of DWORD or STRING
-            # print("value at index " + str(self.index) + " of key " + self.key + " in path " + self.path + " has value of " + str(keyVal) + ", scoring if it is " + self.scoreOn + " " + str(self.value))
-            # print(keyVal[self.index])
-            # print(self.value)
-            # print(type(keyVal[self.index]))
-            # print(type(self.value))
-            # print(keyVal[self.index] == self.value)
+            # print("value at index " + str(self.index) + " of key " + self.key + " in path " + self.path
+            #       + " has value of " + str(keyval) + ", scoring if it is " + self.scoreOn + " " + str(self.value))
             if self.scoreOn == ">":
                 self.valid = keyVal[self.index] > self.value
             elif self.scoreOn == "<":
@@ -711,20 +630,24 @@ class Reg(Vulnerability):
                 self.valid = keyVal[self.index] == self.value
             elif self.scoreOn == "!=":
                 self.valid = keyVal[self.index] != self.value
+            elif self.scoreOn == "contains":
+                self.valid = str(self.value) in str(keyVal)
+            elif self.scoreOn == "!contains":
+                self.valid = str(self.value) not in str(keyVal)
             elif self.scoreOn == "exist":
                 self.valid = True
             elif self.scoreOn == "!exist":
                 self.valid = False
             if self.valid:
-                return 1, self.points, self.comment, self.penalty
+                return 1, self.points, self.comment
             elif not self.valid:
-                return 0, self.points, self.comment, self.penalty
+                return 0, self.points, self.comment
         except Exception as e:
             if self.scoreOn == "!exist" or self.scoreOn == "!path":
-                return 1, self.points, self.comment, self.penalty
+                return 1, self.points, self.comment
             if self.scoreOn == "path":
-                return 0, self.points, self.comment, self.penalty
-            return 3, self.points, self.comment, e
+                return 0, self.points, self.comment
+            return 2, self.points, self.comment + ": " + str(e)
 
 
 class Share(Vulnerability):
@@ -734,36 +657,38 @@ class Share(Vulnerability):
     defaultOnly = None  # checks if only default folders are present
 
     def add(self, ext):
-        self.name = ext[0]
-        self.path = ext[1]
-        self.authorized = ext[2]
-        self.defaultOnly = ext[3]
+        if ext[0] == "default":
+            self.defaultOnly = True
+        else:
+            self.name = ext[0]
+            self.path = ext[1]
+            self.authorized = ext[2]
 
     def check(self):
         if self.defaultOnly:  # defaultOnly is priority
             if len(activeShares) == 6:
                 defaultlist = ["ADMIN$", "C:\\Windows", "C$", "C:\\", "IPC$", ""]
-                for x in range(0, 5):
+                for x in range(0, 6):
                     if not defaultlist[x] == activeShares[x]:
-                        return 0, self.points, self.comment, self.penalty
-                return 1, self.points, self.comment, self.penalty
-            return 0, self.points, self.comment, self.penalty
+                        return 0, self.points, self.comment
+                return 1, self.points, self.comment
+            return 0, self.points, self.comment
         if self.authorized is not None:
             try:
                 if self.authorized:
                     if self.name in activeShares:
                         index = activeShares.index(self.name)
                         if activeShares[index + 1] == self.path:
-                            return 1, self.points, self.comment, self.penalty
-                    return 2, self.points, self.comment, self.penalty  # path is wrong, or folder doesn't exist
+                            return 1, self.points, self.comment
+                    return 0, self.points, self.comment
                 else:
                     if self.name in activeShares:
-                        return 0, self.points, self.comment, self.penalty
-                    return 1, self.points, self.comment, self.penalty
+                        return 0, self.points, self.comment
+                    return 1, self.points, self.comment
             except Exception as e:
-                return 3, self.points, self.comment, e
+                return 2, self.points, self.comment + ": " + str(e)
         else:
-            return 3, self.points, self.comment, "Authorized setting was set to None, needs to be set to True or False"
+            return 2, self.points, self.comment + ": Authorized setting was set to None"
 
 
 class ServFeat(Vulnerability):
@@ -775,12 +700,13 @@ class ServFeat(Vulnerability):
     def add(self, ext):
         if ext[0] == "Serv":
             self.conf = 0
+            self.authorized = ext[2]
         elif ext[0] == "Feat":
             self.conf = 1
+            self.authorized = ext[2]
         elif ext[0] == "DelServ":
             self.conf = 2
         self.name = ext[1]
-        self.authorized = ext[2]
 
     def check(self):
         # For status: 4 = running, 1 = stopped
@@ -789,24 +715,32 @@ class ServFeat(Vulnerability):
             if self.conf == 0:  # service
                 try:
                     scm = win32service.OpenSCManager(None, None, win32service.SC_MANAGER_ALL_ACCESS)
-                    type = win32service.SERVICE_WIN32
+                    # type = win32service.SERVICE_WIN32
                     openService = win32service.OpenService(scm, self.name, win32service.SERVICE_ALL_ACCESS)
                     status = win32service.QueryServiceStatus(openService)
                     startup = win32service.QueryServiceConfig(openService)
                     if self.authorized == "Full":
                         if status[1] == 4 and startup[1] < 3:
-                            return 1, self.points, self.comment, self.penalty
-                        return 0, self.points, self.comment, self.penalty
+                            return 1, self.points, self.comment
+                        return 0, self.points, self.comment
+                    elif self.authorized == "Start":
+                        if status[1] == 4:
+                            return 1, self.points, self.comment
+                        return 0, self.points, self.comment
                     elif self.authorized:
                         if startup[1] != 4:
-                            return 1, self.points, self.comment, self.penalty
-                        return 0, self.points, self.comment, self.penalty
+                            return 1, self.points, self.comment
+                        return 0, self.points, self.comment
                     else:
                         if status[1] == 1 and startup[1] == 4:
-                            return 1, self.points, self.comment, self.penalty
-                        return 0, self.points, self.comment, self.penalty
+                            return 1, self.points, self.comment
+                        return 0, self.points, self.comment
                 except Exception as e:
-                    return 3, self.points, self.comment, e
+                    if DEBUG:
+                        print("Service " + self.name + " does not exist. Error: " + str(e))
+                    if self.authorized:
+                        return 0, self.points, self.comment
+                    return 1, self.points, self.comment
             elif self.conf == 1:  # feature
                 try:
                     result = subprocess.check_output("dism /online /Get-Features", shell=True, startupinfo=None).decode(
@@ -817,28 +751,25 @@ class ServFeat(Vulnerability):
                             state = features[i + 1].split()[2]  # get state
                             # ("Enabled" == "Disabled") != true
                             # ("Disabled" == "Disabled") != false
-                            # print(self.name + " state is " + state + ", it's existance should be " + str(self.authorized))
-                            if (
-                                    state == "Disabled") != self.authorized:  # if state enabled and authorized, or state disabled and unauthorized
-                                return 1, self.points, self.comment, self.penalty
-                            return 0, self.points, self.comment, self.penalty
-                    return 3, self.points, self.comment, "Feature name wasn't found"  # invalid feature name
+                            # print(self.name + " state is " + state + ", it's existance should be "
+                            #       + str(self.authorized))
+                            if (state == "Disabled") != self.authorized:
+                                return 1, self.points, self.comment
+                            return 0, self.points, self.comment
+                    return 2, self.points, self.comment + ": Feature name wasn't found"  # invalid feature name
                 except Exception as e:
-                    return 3, self.points, self.comment, e
+                    return 2, self.points, self.comment + ": " + str(e)
             elif self.conf == 2:  # service in need of deletion/uninstallation, but not a feature
                 try:
                     scm = win32service.OpenSCManager(None, None, win32service.SC_MANAGER_ALL_ACCESS)
-                    type = win32service.SERVICE_WIN32
-                    openService = win32service.OpenService(scm, self.name, win32service.SERVICE_ALL_ACCESS)
-                    status = win32service.QueryServiceStatus(openService)
-                    startup = win32service.QueryServiceConfig(openService)
-                    return 0, self.points, self.comment, self.penalty
-                except:
-                    return 1, self.points, self.comment, self.penalty
+                    win32service.OpenService(scm, self.name, win32service.SERVICE_ALL_ACCESS)
+                    return 0, self.points, self.comment
+                except pywintypes.error:
+                    return 1, self.points, self.comment
             else:
                 print("invalid conf on " + self.comment)
         else:
-            return 3, self.points, self.comment, "Authorized setting was set to None, needs to be set to True or False"
+            return 2, self.points, self.comment + ": Authorized setting was set to None"
 
 
 class File(Vulnerability):
@@ -852,20 +783,70 @@ class File(Vulnerability):
     def check(self):
         if self.authorized is not None:
             try:
-                if self.authorized and (
-                        os.path.isfile(self.path) or os.path.isdir(self.path)):  # file is allowed and path exists
-                    return 1, self.points, self.comment, self.penalty
-                elif not (self.authorized or (os.path.isfile(self.path) or os.path.isdir(
-                        self.path))):  # file isn't allowed and path doesn't exist
-                    return 1, self.points, self.comment, self.penalty
-                elif self.authorized:  # file is allowed and path doesn't exist
-                    return 2, self.points, self.comment, self.penalty  # penalty for deleting critical file
-                else:  # file isn't allowed and path still exists
-                    return 0, self.points, self.comment, self.penalty
+                if self.authorized and (os.path.isfile(self.path) or os.path.isdir(self.path)):
+                    # file is allowed and path exists
+                    return 1, self.points, self.comment
+                elif not (self.authorized or (os.path.isfile(self.path) or os.path.isdir(self.path))):
+                    # file isn't allowed and path doesn't exist
+                    return 1, self.points, self.comment
+                elif self.authorized:
+                    # file is allowed and path doesn't exist
+                    return 0, self.points, self.comment
+                else:
+                    # file isn't allowed and path still exists
+                    return 0, self.points, self.comment
             except Exception as e:
-                return 3, self.points, self.comment, e
+                return 2, self.points, self.comment + ": " + str(e)
         else:
-            return 3, self.points, self.comment, "Authorized set to None, needs to be True or False"
+            return 2, self.points, self.comment + ": Authorized value was set to None"
+
+
+class Content(Vulnerability):
+    path = ""
+    upperbound = ""
+    text = ""
+    lowerbound = ""
+    checking = False
+    authorized = None
+
+    def add(self, ext):
+        self.path = ext[0]
+        self.upperbound = ext[1]
+        self.text = ext[2]
+        self.lowerbound = ext[3]
+        self.authorized = ext[4]
+
+    def check(self):
+        self.checking = False
+        if self.authorized is not None:
+            try:
+                with open(self.path, "r+") as f:
+                    if self.upperbound == "" and self.lowerbound == "":
+                        for line in f.readlines():
+                            if self.authorized and self.text in line:  # if text wanted and is found in one of the lines
+                                return 1, self.points, self.comment
+                            if (not self.authorized) and (self.text in line):  # if text not wanted but found
+                                return 0, self.points, self.comment
+                        if not self.authorized:  # if text not wanted and not found in any line
+                            return 1, self.points, self.comment
+                        return 0, self.points, self.comment  # if text wanted but not found in any line
+                    else:
+                        for line in f.readlines():
+                            if self.upperbound in line:
+                                self.checking = True
+                            if self.lowerbound in line:
+                                self.checking = False
+                            if self.authorized and self.text in line and self.checking:
+                                return 1, self.points, self.comment
+                            if (not self.authorized) and (self.text in line and self.checking):
+                                return 0, self.points, self.comment
+                        if not self.authorized:
+                            return 1, self.points, self.comment
+                        return 0, self.points, self.comment
+            except Exception as e:
+                return 2, self.points, self.comment + ": " + str(e)
+        else:
+            return 2, self.points, self.comment + ": Invalid value for authorized"
 
 
 class Program(Vulnerability):
@@ -882,19 +863,77 @@ class Program(Vulnerability):
         if self.authorized is not None:
             try:
                 if self.authorized:
-                    if self.name in installedPrograms:
-                        return 1, self.points, self.comment, self.penalty
+                    if self.name is not None and self.name in installedPrograms:
+                        return 1, self.points, self.comment
                     elif "C:" in self.path and Path(self.path).exists():
-                        return 1, self.points, self.comment, self.penalty
-                    return 0, self.points, self.comment, self.penalty  # possible penalty for uninstalling critical service
+                        return 1, self.points, self.comment
+                    return 0, self.points, self.comment  # possible penalty for uninstalling critical service
                 else:
                     if not Path(self.path).exists():
-                        return 1, self.points, self.comment, self.penalty
-                    return 0, self.points, self.comment, self.penalty  # program still installed when it should be gone
+                        return 1, self.points, self.comment
+                    return 0, self.points, self.comment  # program still installed when it should be gone
             except Exception as e:
-                return 3, self.points, self.comment, e
+                return 2, self.points, self.comment + ": " + str(e)
         else:
-            return 3, self.points, self.comment, "Authorized setting was set to None, needs to be set to True or False"
+            return 2, self.points, self.comment + ": Authorized setting was set to None"
+
+
+class Update(Vulnerability):
+    package = ""
+
+    kb = ""  # something like KB4132216
+
+    def add(self, ext):
+        self.kb = ext[0]
+
+    def check(self):
+        try:
+            self.package = subprocess.check_output("dism /online /get-packages | findstr \"" + self.kb + "\"",
+                                                   shell=True, startupinfo=None).decode('utf-8')
+            if self.kb in self.package:
+                return 1, self.points, self.comment
+            return 0, self.points, self.comment
+        except Exception as e:
+            return 2, self.points, self.comment + ": " + str(e)
+
+
+class Custom:
+    classes = []
+    condition = ""
+    points = 0
+    comment = ""
+    penalty = ""
+
+    def __init__(self, classes, condition, pcp):
+        self.classes = classes
+        self.condition = condition
+        self.points = pcp[0]
+        self.comment = pcp[1]
+
+    def check(self):
+        try:
+            if self.condition == "!":
+                if self.classes[0].check()[0] == 0:
+                    return 1, self.points, self.comment
+                elif self.classes[0].check()[0] == 1:
+                    return 0, self.points, self.comment
+                else:
+                    return self.classes[0].check()
+            for c in self.classes:  # if one returns an error and it's a "|", put one that doesn't give an error first
+                if (c.check()[0] == 0 or c.check()[0] == 2) and self.condition == "&":  # one did not pass check
+                    return 0, self.points, self.comment
+                if c.check()[0] == 1 and self.condition == "|":  # only one needs to pass check
+                    return 1, self.points, self.comment
+                if c.check()[0] == 2:  # condition is "|"
+                    if DEBUG:
+                        print("error from custom with " + str(c.check()[1]) + ": " + str(c.check()[2]))
+                    # return 0, self.points, self.comment
+            if self.condition == "|":  # none passed check
+                return 0, self.points, self.comment
+            if self.condition == "&":  # all passed check
+                return 1, self.points, self.comment
+        except Exception as e:
+            return 2, self.points, self.comment + ": " + str(e)
 
 
 '''END OF CLASSES---------------------------------------------------------------------------------------------------'''
@@ -906,9 +945,151 @@ def getMax():
         maxPoints += int(vuln.points)
 
 
+def initialize():
+    global time
+    global uploadStatus
+    global DEBUG
+    global BACKDOOR
+    global IMAGE_NAME
+    global NAME
+    global BACKDOORID
+    global STARTTIME
+    # record/get the starting time
+    try:
+        timekey = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Software\\Scorpio', 0, (REGVIEW + winreg.KEY_READ))
+        time = winreg.QueryValueEx(timekey, TIMEKEYNAME)[0]
+        STARTTIME = datetime.strptime(time, '%Y-%m-%dT%H:%M:%S.%fZ')
+    except FileNotFoundError:
+        winreg.CreateKey(winreg.HKEY_CURRENT_USER, 'Software\\Scorpio')
+        timekey = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Software\\Scorpio', 0, (REGVIEW + winreg.KEY_WRITE))
+        STARTTIME = datetime.utcnow()
+        time = STARTTIME.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        winreg.SetValueEx(timekey, TIMEKEYNAME, 0, winreg.REG_SZ, time)
+        winreg.CloseKey(timekey)
+    # get ID
+    try:
+        idkey = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Software\\Scorpio', 0, (REGVIEW + winreg.KEY_READ))
+        uniqueid = winreg.QueryValueEx(idkey, AUTHKEYNAME)[0]
+    except (FileNotFoundError, ValueError):
+        BACKDOOR = False
+        try:
+            code = input("Enter code: ")
+            if code == "":
+                exit()
+            elif code == env.BASIC_CODE:
+                print("You may continue.\n")
+            elif code == env.ADMIN_CODE:
+                BACKDOOR = True
+                print("FULL ACCESS GRANTED\n")
+            else:
+                print("Please try again when you have the code.\n")
+                input("Press Enter to exit...")
+                exit()
+        except:
+            exit()
+        if not BACKDOOR:
+            confirmation = input("""While competing in Troy Cyber:
+I will consider the ethical and legal implications of all my actions. I will not conduct, nor will I condone, any actions that attack, hack, penetrate, or interfere with another team’s or individual’s computer system, the competition server, or the scoring engine.
+I will not keep or download any instances of competition images outside of their specified dates of use.
+I will comply with ethical rules and all statements mentioned above.
+
+[Y/N]""")
+            if confirmation not in ['Y', 'y', 'Yes', 'yes', 'YES']:
+                exit()
+        winreg.CreateKey(winreg.HKEY_CURRENT_USER, 'Software\\Scorpio')
+        idkey = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Software\\Scorpio', 0, (REGVIEW + winreg.KEY_WRITE))
+        if BACKDOOR:
+            uniqueid = BACKDOORID
+        else:
+            # TODO: user will supply a pre-made unique ID (uniqueid), if lookup returns a value set key
+            uniqueid = ''.join(
+                random.SystemRandom().choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in
+                range(6))
+            # uniqueid = input("Enter your competition ID:")
+        winreg.SetValueEx(idkey, AUTHKEYNAME, 0, winreg.REG_SZ, uniqueid)
+        winreg.CloseKey(idkey)
+    # end of first-time set up
+    if uniqueid == BACKDOORID:
+        NAME = "TESTER"
+        DEBUG = True
+        IMAGE_NAME = "TEST: " + IMAGE_NAME
+        BACKDOOR = True
+    else:
+        # NAME = base64.b64encode(hashlib.sha256(uniqueid.encode("UTF-8")).digest())[:6].decode("UTF-8")
+        NAME = hashlib.sha256(uniqueid.encode("UTF-8")).hexdigest()[:6]
+        # NAME = uniqueid
+        # TODO: look up uniqueid in dictionary and set NAME to value
+
+    if not BACKDOOR and IS_ONLINE:
+        serversetup()
+        print("\nYour unique ID on the scoreboard is " + NAME + "\n")
+    else:
+        uploadStatus = "<span style=\"color:gray\">Disconnected: Scorpio Offline Mode</span>"
+
+    print("Scoring has begun. Leave this window open.")
+
+
+def sendScore(totalpoints, elapsedtime):
+    global uploadStatus
+    global DEBUG
+    elapsedtime = [x for x in elapsedtime.split(":")][:2]
+    if elapsedtime[0][0] == '0' and len(elapsedtime[0]) == 2:
+        elapsedtime[0] = elapsedtime[0][1]
+    body = {"name": NAME, "imageName": IMAGE_NAME, "score": totalpoints, "totalTime": ":".join(elapsedtime)}
+    headers = {'content-type': 'application/json'}
+    try:
+        r = requests.post(env.SCORING_SERVER + "/addScore", data=json.dumps(body), headers=headers)
+        if r.status_code != 200:
+            uploadStatus = "<span style=\"color:red\">FAILED - Reason: Could not connect to server</span>"
+        else:
+            uploadStatus = "<span style=\"color:green\">OK</span>"
+    except requests.exceptions.ConnectionError:
+        uploadStatus = "<span style=\"color:red\">FAILED - Reason: Could not connect to server</span>"
+    except Exception as e:
+        if DEBUG:
+            print("Error in sending score: " + str(e))
+
+
+def serversetup():
+    global STARTTIME
+    global UPDATETIME
+    global TOTALTIME
+    global warning
+    global uploadStatus
+    try:
+        req = requests.get(env.SCORING_SERVER + "/getScores?name=" + quote(NAME) + "&imageName=" + IMAGE_NAME)
+        if req.content == b'[]':
+            sendScore(0, "0:00:00")
+        else:
+            STARTTIME = datetime.strptime(ast.literal_eval(req.content.decode("utf-8"))[0]["startTime"],
+                                          '%Y-%m-%dT%H:%M:%S.%fZ')
+            UPDATETIME = datetime.strptime(ast.literal_eval(req.content.decode("utf-8"))[0]["updateTime"],
+                                           '%Y-%m-%dT%H:%M:%S.%fZ')
+            TOTALTIME = UPDATETIME - STARTTIME
+        if [int(float(x)) for x in str(TOTALTIME).split(":")] > [6, 0, 0]:
+            print("Warning: time period exceeded")
+            warning = """<h3 class="center"><span style="color:red">Warning: time period exceeded</span></h3>"""
+        elif [int(float(x)) for x in str(TOTALTIME).split(":")] > [5, 0, 0]:
+            print("Warning: time period near limit")
+            warning = """<h3 class="center"><span style="color:yellow">Warning: time period near limit</span></h3>"""
+    except requests.exceptions.ConnectionError:
+        uploadStatus = "<span style=\"color:red\">FAILED - Reason: Could not connect to server</span>"
+    except Exception as e:
+        print("Error in communicating with scoreboard - is something blocking the connection?")
+        if DEBUG:
+            print(e)
+
+    # TODO: during score send, server server will evaluate difference and return in format H+:MM:SS, rather than client
+
+
 def runScoring():
     global lastPoints
+    global UPDATETIME
     global TOTALTIME
+    global warning
+    global IMAGE_NAME
+    global BACKDOOR
+    global uploadStatus
     vulnLines = []
     penalLines = []
     totalPoints = 0
@@ -918,43 +1099,68 @@ def runScoring():
     currentPenal = 0
     for vuln in vulns:
         foo = vuln.check()
+        if DEBUG and int(foo[0]) == 0:
+            print("Vuln #" + str(vulns.index(vuln) + 1) + " missing: " + foo[2] + "\n")
         if int(foo[0]) == 1 and int(foo[1]) > 0:
             totalPoints += int(foo[1])
             gainPoints += int(foo[1])
             currentVulns += 1
             vulnLines.append(str(foo[2]) + " - " + str(foo[1]) + " pts" + ("<br>" if IS_GUI else "") + "\n")
+        if DEBUG and int(foo[0]) == 2:
+            print("WARNING: error from vuln #" + str(vulns.index(vuln) + 1) + " - " + foo[2] + "\n")
     for penal in penals:
         bar = penal.check()
-        if int(bar[0]) == 0 or int(bar[0]) == 2:
+        if int(bar[0]) == 0:
             totalPoints -= -1*int(bar[1])
             losePoints += -1*int(bar[1])
             currentPenal += 1
-            penalLines.append(str(bar[3]) + " - " + str(-1*int(bar[1])) + " pts" + ("<br>" if IS_GUI else "") + "\n")
-    try:
-        req = requests.get(env.SCORING_SERVER + "/getScores?name=" + quote(NAME) + "&imageName=" + IMAGE_NAME)
-        UPDATETIME = datetime.strptime(ast.literal_eval(req.content.decode("utf-8"))[0]["updateTime"],
-                                       '%Y-%m-%dT%H:%M:%S.%fZ')
-        TOTALTIME = UPDATETIME - STARTTIME
-        if [int(float(x)) for x in str(TOTALTIME).split(":")] > [6, 0, 0]:
-            warning = """<h3 class="center"><span style="color:yellow">Warning: time period exceeded</span></h3>"""
-    except Exception as e:
-        pass
+            penalLines.append(str(bar[2]) + " - " + str(-1*int(bar[1])) + " pts" + ("<br>" if IS_GUI else "") + "\n")
+    if not BACKDOOR:
+        try:
+            if IS_ONLINE:
+                req = requests.get(env.SCORING_SERVER + "/getScores?name=" + quote(NAME) + "&imageName=" + IMAGE_NAME)
+                UPDATETIME = datetime.strptime(ast.literal_eval(req.content.decode("utf-8"))[0]["updateTime"],
+                                               '%Y-%m-%dT%H:%M:%S.%fZ')
+            else:
+                UPDATETIME = datetime.utcnow()
+            TOTALTIME = UPDATETIME - STARTTIME
+            if [int(float(x)) for x in str(TOTALTIME).split(":")] > [6, 0, 0]:
+                warning = """<h3 class="center"><span style="color:red">Warning: time period exceeded</span></h3>"""
+            elif [int(float(x)) for x in str(TOTALTIME).split(":")] > [5, 0, 0]:
+                warning = """<h3 class="center"><span style="color:yellow">Warning: time period near limit</span></h3>"""
+        except requests.exceptions.ConnectionError:
+            uploadStatus = "<span style=\"color:red\">FAILED - Reason: Could not connect to server</span>"
+        except Exception as e:
+            if DEBUG:
+                print("Error in sending score: " + str(e))
     writeScores(IMAGE_NAME, vulnLines, penalLines, totalPoints, gainPoints, losePoints, currentVulns, currentPenal,
                 len(vulns), strftime("%Y-%m-%d %H:%M:%S"), TOTALTIME)
     try:
         if totalPoints > lastPoints and IS_GUI:
+            toaster = ToastNotifier()
+            toaster.show_toast("Scorpio", "You Gained Points", icon_path="C:/Windows/Scorpio/scorpio.ico", duration=5,
+                               threaded=True)
             winsound.PlaySound("C:/" + SCORING_FOLDER + "/gain.wav", winsound.SND_FILENAME)
         elif totalPoints < lastPoints and IS_GUI:
+            toaster = ToastNotifier()
+            toaster.show_toast("Scorpio", "You Lost Points", icon_path="C:/Windows/Scorpio/scorpio.ico", duration=5,
+                               threaded=True)
             winsound.PlaySound("C:/" + SCORING_FOLDER + "/alarm.wav", winsound.SND_FILENAME)
     except:
-        pass
+        if DEBUG:
+            print("audio error")
+    if DEBUG:
+        print()
     lastPoints = totalPoints
 
 
 def writeScores(imageName, vulnLines, penalLines, totalPoints, gainPoints, losePoints, currentVulns, currentPenal,
-                totalVulns, time, timeElapsed):
-    sendScore(totalPoints, formatTime(timeElapsed))
-    with open("C:/Scoring Engine/Scoring Report." + ("html" if IS_GUI else "txt"), 'w') as output_file:
+                totalVulns, currentTime, timeElapsed):
+    global NAME
+    global BACKDOOR
+    if not BACKDOOR and IS_ONLINE:
+        sendScore(totalPoints, formatTime(timeElapsed))
+    with open(f"C:/{SCORING_FOLDER}/Scoring Report." + ("html" if IS_GUI else "txt"), 'w') as output_file:
         for line in html_str.splitlines():
             if line.strip() == '{{+LIST}}':
                 for vulnLine in vulnLines:
@@ -975,8 +1181,9 @@ def writeScores(imageName, vulnLines, penalLines, totalPoints, gainPoints, loseP
                 newLine = newLine.replace("{{+CURRENT}}", str(currentVulns))
                 newLine = newLine.replace("{{-CURRENT}}", str(currentPenal))
                 newLine = newLine.replace("{{VULNS}}", str(totalVulns))
-                newLine = newLine.replace("{{TIME}}", time)
+                newLine = newLine.replace("{{TIME}}", currentTime)
                 newLine = newLine.replace("{{RUNTIME}}", formatTime(timeElapsed))
+                newLine = newLine.replace("{{NAME}}", NAME)
                 output_file.write(newLine + ("" if IS_GUI else "\n"))
 
 
@@ -998,29 +1205,34 @@ def formatTime(time):
 # GATHER INFO SECTION------------------------------------------------------------------------------------------------ #
 
 def getUsers():
+    global DEBUG
     try:
         level = 3
         resume = 0
         while True:
             localUserList, total, resume = win32net.NetUserEnum(None, level, 0, resume, 999999)
-            for user in localUserList:
-                userList.append(user)
-                usernameList.append(user['name'])
+            for userProfile in localUserList:
+                userList.append(userProfile)
+                usernameList.append(userProfile['name'])
             if resume == 0:
                 break
-
     except pywintypes.error as e:
-        print(e)
+        if DEBUG:
+            print(e)
 
 
 def exportPolicies():
+    global DEBUG
     try:
         subprocess.check_output("SecEdit.exe /export /cfg \"C:\\" + SCORING_FOLDER + "\\securityExport.inf\"")
     except Exception as e:
-        print(e)
+        print("Error in checking security - did you run as Administrator?")
+        if DEBUG:
+            print(e)
 
 
 def getShares():
+    global DEBUG
     try:
         level = 2
         resume = 0
@@ -1032,27 +1244,20 @@ def getShares():
             if resume == 0:
                 break
     except pywintypes.error as e:
-        print(e)
+        print("Error in checking security - is the Server service enabled?")
+        if DEBUG:
+            print(e)
 
 
-def getInstalledPrograms():
-    if IMAGE_BIT == 32:
-        key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, 'SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 0,
-                         (winreg.KEY_WOW64_32KEY + winreg.KEY_READ))
-    else:
-        key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, 'SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 0,
-                         (winreg.KEY_WOW64_64KEY + winreg.KEY_READ))
+def getPrograms():
+    key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, 'SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 0,
+                         (REGVIEW + winreg.KEY_READ))
     for i in range(winreg.QueryInfoKey(key)[0]):
         name = winreg.EnumKey(key, i)
         try:
-            if IMAGE_BIT == 32:
-                subkey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+            subkey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
                                     'SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\' + name, 0,
-                                    (winreg.KEY_WOW64_32KEY + winreg.KEY_READ))
-            else:
-                subkey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
-                                    'SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\' + name, 0,
-                                    (winreg.KEY_WOW64_64KEY + winreg.KEY_READ))
+                                    (REGVIEW + winreg.KEY_READ))
             displayName = winreg.QueryValueEx(subkey, "DisplayName")[0]
             installedPrograms.append(displayName)
         except:
@@ -1062,7 +1267,7 @@ def getInstalledPrograms():
 # Function to run all information helpers
 def runInfo():
     getUsers()
-    getInstalledPrograms()
+    getPrograms()
     exportPolicies()
     getShares()
 
@@ -1072,144 +1277,146 @@ def runInfo():
 
 '''DEFINE YOUR VULNS BELOW-------------------------------------------------------------------------------------------'''
 
-extractconf()
+conflist, USER, IMAGE_NAME = extractconf(SCORING_FOLDER)
 
 def str2bool(arg):
     return arg.lower() in ("true", "1")
 
 for forens in conflist["forensics"]:
     if int(forens["points"]) >= 0:
-        vulns.append(Forensics([forens["filepath"], forens["answer"]], [forens["points"], forens["description"], ""]))
+        vulns.append(Forensics([forens["filepath"], forens["answer"]], [forens["points"], forens["description"]]))
     else:
-        penals.append(Forensics([forens["filepath"], forens["answer"]], [forens["points"], "", forens["description"]]))
+        penals.append(Forensics([forens["filepath"], forens["answer"]], [forens["points"], forens["description"]]))
 
 for users in conflist["users"]:
-    if users["option"] == "authorized" and users["argument"] == "True":
+    if users["option"] == "authorized":
         if int(users["points"]) >= 0:
-            vulns.append(User(["User", users["username"], None, True, None, None, "", None],
-                              [users["points"], users["description"], ""]))
+            vulns.append(User([users["username"], str2bool(users["argument"])],
+                              [users["points"], users["description"]]))
         else:
-            penals.append(User(["User", users["username"], None, True, None, None, "", None],
-                               [users["points"], "", users["description"]]))
-    elif users["option"] == "authorized" and users["argument"] == "False":
-        if int(users["points"]) >= 0:
-            vulns.append(User(["User", users["username"], None, False, None, None, "", None],
-                          [users["points"], users["description"], ""]))
-        else:
-            penals.append(User(["User", users["username"], None, False, None, None, "", None],
-                              [users["points"], "", users["description"]]))
-    elif users["option"] == "passwd":
-        if int(users["points"]) >= 0:
-            vulns.append(User(["User", users["username"], users["argument"], True, True, None, "", None],
-                          [users["points"], users["description"], ""]))
-        else:
-            penals.append(User(["User", users["username"], users["argument"], True, True, None, "", None],
-                              [users["points"], "", users["description"]]))
-    elif users["option"] == "chname":
-        if int(users["points"]) >= 0:
-            vulns.append(User(["User", users["username"], None, True, None, True, users["argument"], None],
-                          [users["points"], users["description"], ""]))
-        else:
-            penals.append(User(["User", users["username"], None, True, None, True, users["argument"], None],
-                              [users["points"], "", users["description"]]))
+            penals.append(User([users["username"], str2bool(users["argument"])],
+                               [users["points"], users["description"]]))
     elif users["option"] == "pwexp":
         if int(users["points"]) >= 0:
-            vulns.append(User(["User", users["username"], None, True, None, None, "", True],
-                          [users["points"], users["description"], ""]))
+            vulns.append(User([users["username"], users["option"]],
+                          [users["points"], users["description"]]))
         else:
-            penals.append(User(["User", users["username"], None, True, None, None, "", True],
-                              [users["points"], "", users["description"]]))
+            penals.append(User([users["username"], users["option"]],
+                              [users["points"], users["description"]]))
+    elif users["option"] in ["passwd", "chname", "!chname"]:
+        if int(users["points"]) >= 0:
+            vulns.append(User([users["username"], users["option"], users["argument"]],
+                          [users["points"], users["description"]]))
+        else:
+            penals.append(User([users["username"], users["option"], users["argument"]],
+                              [users["points"], users["description"]]))
     else:
         print("Invalid options/arguments for users vulns")
 
 for groups in conflist["groups"]:
     if int(groups["points"]) >= 0:
-        vulns.append(User(["Group", groups["username"], groups["groupName"], str2bool(groups["shouldBeMember"])], [groups["points"], groups["description"], ""]))
+        vulns.append(User([groups["username"], groups["groupName"], str2bool(groups["shouldBeMember"])], [groups["points"], groups["description"]]))
     else:
-        penals.append(User(["Group", groups["username"], groups["groupName"], str2bool(groups["shouldBeMember"])],
-                          [groups["points"], "", groups["description"]]))
+        penals.append(User([groups["username"], groups["groupName"], str2bool(groups["shouldBeMember"])],
+                          [groups["points"], groups["description"]]))
 
 for pols in conflist["localpolicy"]:
     try:
         expectedValue = int(pols["expectedValue"])
         if int(pols["points"]) >= 0:
-            vulns.append(Policy([pols["policyName"], pols["condition"], expectedValue], [pols["points"], pols["description"], ""]))
+            vulns.append(Policy([pols["policyName"], pols["condition"], expectedValue], [pols["points"], pols["description"]]))
         else:
             penals.append(Policy([pols["policyName"], pols["condition"], expectedValue],
-                                [pols["points"], "", pols["description"]]))
+                                [pols["points"], pols["description"]]))
     except:
         if int(pols["points"]) >= 0:
-            vulns.append(Policy([pols["policyName"], pols["condition"], pols["expectedValue"]], [pols["points"], pols["description"], ""]))
+            vulns.append(Policy([pols["policyName"], pols["condition"], pols["expectedValue"]], [pols["points"], pols["description"]]))
         else:
             penals.append(Policy([pols["policyName"], pols["condition"], pols["expectedValue"]],
-                                [pols["points"], "", pols["description"]]))
+                                [pols["points"], pols["description"]]))
 
 for comms in conflist["commands"]:
     if int(comms["points"]) >= 0:
-        vulns.append(Command([comms["command"], comms["splitPosition"], comms["comparisonValue"], str2bool(comms["matchOrNot"])], [comms["points"], comms["description"], ""]))
+        vulns.append(Command([comms["command"], comms["splitPosition"], comms["comparisonValue"], str2bool(comms["matchOrNot"])], [comms["points"], comms["description"]]))
     else:
         penals.append(
             Command([comms["command"], comms["splitPosition"], comms["comparisonValue"], str2bool(comms["matchOrNot"])],
-                    [comms["points"], "", comms["description"]]))
+                    [comms["points"], comms["description"]]))
 
 for featservs in conflist["featuresAndServices"]:
     if int(featservs["points"]) >= 0:
-        vulns.append(ServFeat([featservs["servOrFeat"], featservs["itemName"], str2bool(featservs["authorized"])], [featservs["points"], featservs["description"], ""]))
+        vulns.append(ServFeat([featservs["servOrFeat"], featservs["itemName"], str2bool(featservs["authorized"])], [featservs["points"], featservs["description"]]))
     else:
         penals.append(ServFeat([featservs["servOrFeat"], featservs["itemName"], str2bool(featservs["authorized"])],
-                              [featservs["points"], "", featservs["description"]]))
+                              [featservs["points"], featservs["description"]]))
 
 for shares in conflist["shares"]:
     if int(shares["points"]) >= 0:
-        vulns.append(Share([shares["shareName"], shares["sharePath"], str2bool(shares["authorized"]), False], [shares["points"], shares["description"], ""]))
+        vulns.append(Share([shares["shareName"], shares["sharePath"], str2bool(shares["authorized"]), False], [shares["points"], shares["description"]]))
     else:
         penals.append(Share([shares["shareName"], shares["sharePath"], str2bool(shares["authorized"]), False],
-                           [shares["points"], "", shares["description"]]))
+                           [shares["points"], shares["description"]]))
 
 for files in conflist["files"]:
     if int(files["points"]) >= 0:
-        vulns.append(File([files["filePath"], str2bool(files["authorized"])], [files["points"], files["description"], ""]))
+        vulns.append(File([files["filePath"], str2bool(files["authorized"])], [files["points"], files["description"]]))
     else:
         penals.append(
-            File([files["filePath"], str2bool(files["authorized"])], [files["points"], "", files["description"]]))
+            File([files["filePath"], str2bool(files["authorized"])], [files["points"], files["description"]]))
 
 for apps in conflist["programs"]:
     if int(apps["points"]) >= 0:
-        vulns.append(Program([apps["programName"], apps["programPath"], str2bool(apps["authorized"])], [apps["points"], apps["description"], ""]))
+        vulns.append(Program([apps["programName"], apps["programPath"], str2bool(apps["authorized"])], [apps["points"], apps["description"]]))
     else:
         penals.append(Program([apps["programName"], apps["programPath"], str2bool(apps["authorized"])],
-                             [apps["points"], "", apps["description"]]))
+                             [apps["points"], apps["description"]]))
 
 for regs in conflist["registry"]:
     try:
         expectedValue = int(regs["expectedValue"])
         if int(regs["points"]) >= 0:
-            vulns.append(Reg([regs["hKey"], regs["path"], regs["key"], regs["checkingIndex"], regs["condition"], expectedValue], [regs["points"], regs["description"], ""]))
+            vulns.append(Reg([regs["hKey"], regs["path"], regs["key"], regs["checkingIndex"], regs["condition"], expectedValue], [regs["points"], regs["description"]]))
         else:
             penals.append(
                 Reg([regs["hKey"], regs["path"], regs["key"], regs["checkingIndex"], regs["condition"], expectedValue],
-                    [regs["points"], "", regs["description"]]))
+                    [regs["points"], regs["description"]]))
     except:
         if int(regs["points"]) >= 0:
-            vulns.append(Reg([regs["hKey"], regs["path"], regs["key"], regs["checkingIndex"], regs["condition"], regs["expectedValue"]], [regs["points"], regs["description"], ""]))
+            vulns.append(Reg([regs["hKey"], regs["path"], regs["key"], regs["checkingIndex"], regs["condition"], regs["expectedValue"]], [regs["points"], regs["description"]]))
         else:
             penals.append(Reg([regs["hKey"], regs["path"], regs["key"], regs["checkingIndex"], regs["condition"],
-                              regs["expectedValue"]], [regs["points"], "", regs["description"]]))
+                              regs["expectedValue"]], [regs["points"], regs["description"]]))
 
 
 '''END OF VULNS------------------------------------------------------------------------------------------------------'''
 
 # MAIN SEQUENCE
-print(IMAGE_NAME + " provided by Troy High School Cyber Defense Club.\nUnauthorized access to this image is not "
-                   "tolerated.\nCopyright " + u'\u00A9' + " 2020 Scorpio" + u'\u2122' + "\nClement Chan and Jimmy Li")
+print(IMAGE_NAME + " provided by Troy High School Cyber Defense.\nUnauthorized access to this image is not "
+                   "tolerated.\nScorpio developed by Clement Chan and Jimmy Li")
 
 getMax()
-while True:
+# for vuln in vulns:
+#     print(vuln.comment + " - " + str(vuln.points) + " pts")
+# print()
+# print("Total vulns: " + str(len(vulns)))
+# print("Total points: " + str(maxPoints))
+# exit()
+if not END_TIME or strftime("%y %m %d %H %M %S").split() < END_TIME or BACKDOOR:
+    initialize()
+    while not END_TIME or strftime("%y %m %d %H %M %S").split() < END_TIME or BACKDOOR:
+        runInfo()
+        runScoring()
+        # Clear Lists
+        userList.clear()
+        usernameList.clear()
+        installedPrograms.clear()
+        activeShares.clear()
+        if BACKDOOR:
+            wait = input("Press Enter to check...")
+        else:
+            sleep(REFRESH_RATE)
+    scorpioStatus = "<span style=\"color:red\">DOWN - Reason: Time period exceeded</span>"
     runInfo()
     runScoring()
-    # Clear Lists
-    userList.clear()
-    usernameList.clear()
-    installedPrograms.clear()
-    activeShares.clear()
-    sleep(REFRESH_RATE)
+print("Scorpio Scoring Engine is shut down")
+exit()

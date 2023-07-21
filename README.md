@@ -4,11 +4,11 @@
 
 Scorpio is a client-side Windows scoring engine tool designed to score the security of Windows machines given predefined vulnerabilities to check for. It is meant to mock CyberPatriot image scoring, and it provides a clean output of the security issues that are fixed.
 
-| :warning: DISCLAIMER                                                                                                                                                                  |
-|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Scorpio is designed for educational purposes, not for competitions! Scoring happens offline, but that also means that with enough effort, vulnerabilities can be extracted. Use at your own risk! |
+| :warning: DISCLAIMER                                                                                                                                                                                                      |
+|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Scorpio is designed for educational purposes, not for competitions! Scoring happens offline, but that also means that with enough effort, scores can be faked and vulnerabilities can be extracted. Use at your own risk! |
 
-### Prerequisites
+## Prerequisites
 
 Install Python 3.11. You also need to use a Windows system.
 
@@ -18,32 +18,28 @@ Install the required Python modules:
 pip install -r requirements.txt
 ```
 
-## Modifying the Engine to Your Purposes
+### Configuration Editor
 
-Don't forget to test the engine (run as admin) to see if it runs without errors.
+The configuration tool for Scorpio has been migrated to an electron app. It can be downloaded [here](https://drive.google.com/file/d/1WGncgS5qvgRrWK09IVnO-MkPiYfeC9ao/view?usp=sharing).
 
-Once you are done, use pyinstaller to build an executable and add an icon and obfuscation through pyarmor if you desire.
+## Usage
 
-```sh
-pyinstaller --onefile -i scorpio.ico scorpio.py
-```
+* Move the "Scoring Engine" folder to "C:\Scoring Engine".
+* Use the configuration editor to generate an encrypted configuration for the vulnerabilities, and paste it into the `conf.txt`. Run `scorpio.py` with an administrative account.
+* Use the forensics question template to implement your own forensics questions.
+* Create an `env.py` from the `env.example.py`, supplying your own codes. If you really need it, ask the developers for the key.
 
-## Configuration Editor
+To build an exe, simply run the `build.bat` file. It will output the exe to the dist folder.
 
-The configuration tool for Scorpio has been migrated to an electron app. It can be downloaded [here](https://drive.google.com/file/d/1WGncgS5qvgRrWK09IVnO-MkPiYfeC9ao/view?usp=sharing). Simply paste the encrypted configuration into your `conf.txt` file.
+## Image Development Guide
 
-## Running the tests
+Configure a virtual machine with the vulnerabilities in place, and test to ensure that the scoring engine is working correctly.
 
-Use a pre-built image or build a new one to test the vulnerabilities to ensure that the scoring engine is scoring correctly. Pretend that you are the client/user for better results (they may think one thing whereas you think another). Ensure that clients/users cannot accidentally mess up the engine.
-
-## Putting the stuff on your image
-
-* Move the "Scoring Engine" folder to "C:\Scoring Engine"
+When you have finished testing both the py and compiled exe, follow the below steps to create a quality image:
 * Store the compiled exe and ico inside the Windows folder or any folder where clients won't look at normally, and possibly add hide attributes
 * Create a shortcut for the exe and put it on the desktop
 * Change the shortcut icon to the ico file
 * Implement your own readme, and make sure to mention NOT TO DELETE SCORPIO
-* Implement the forensics questions
 * Create a scheduled task or service to run Scorpio with highest privileges on log in
 * Run it several times to test it out
 * Delete any remnant files
