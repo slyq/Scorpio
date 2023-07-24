@@ -1,12 +1,29 @@
-![Scorpio logo](https://github.com/slyq/Scorpio/blob/main/scorpio.png)
+![Scorpio logo](https://drive.google.com/uc?export=view&id=1nvj9XO6RMVa9YdkFLhZKwaxZeizdWCpS)
 
 # Scorpio
 
-Scorpio is a client-side Windows scoring engine tool designed to score the security of Windows machines given predefined vulnerabilities to check for. It is meant to mock CyberPatriot image scoring, and it provides a clean output of the security issues that are fixed.
+Scorpio is a client-side Windows vulnerability scoring engine tool designed to score the security of Windows machines given predefined vulnerabilities to check for. It is meant to mock CyberPatriot image scoring, and it provides a clean output of the security issues that are fixed.
 
 | :warning: DISCLAIMER                                                                                                                                                                                                      |
 |:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Scorpio is designed for educational purposes, not for competitions! Scoring happens offline, but that also means that with enough effort, scores can be faked and vulnerabilities can be extracted. Use at your own risk! |
+
+## Screenshots
+
+Standard usage:
+
+![Standard usage](https://drive.google.com/uc?export=view&id=1rRZL0NkVnDfVWVCmW3Xtx7ogT-_EvgM4)
+
+Backdoor usage:
+
+![Backdoor usage](https://drive.google.com/uc?export=view&id=1JlYWMuCj8_4x_6S0_IPYEGHgv7HKJoRm)
+
+## Features
+
+- GUI editor for your vulnerability assessment configuration
+- Friendly output of remediatead security issues
+- Visual and audio notifications upon point gain/loss
+- Backdoor mode for debugging and answer key hints
 
 ## Prerequisites
 
@@ -47,7 +64,7 @@ When you have finished testing both the py and compiled exe, follow the below st
 ## Known bugs
 
 * Disabling a user will prevent the password changed check for that user
-* Sometimes you may have to manually open the features box so that `dism` gets the list
+* Error messages display in the console after a sound is played by Scorpio
 
 ## Built With
 
